@@ -5,20 +5,24 @@
 # Copyright (c) 2017 Jonathan Bradley Whited (@esotericpig)
 # 
 # nurby is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
+# it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 # 
 # nurby is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# GNU Lesser General Public License for more details.
 # 
-# You should have received a copy of the GNU General Public License
+# You should have received a copy of the GNU Lesser General Public License
 # along with nurby.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 # TODO: break out into classes, just testing for now...
+
+# TODO: while parsing, break out into parts in array
+#       ['bb.com/',Var('[05-]'),' bb ',Var('[u=1-4]'),...]
+#       this is the job of the Parser class
 
 =begin
 
@@ -26,8 +30,18 @@ Name = "Not cURl w/ ruBY"
 
 "bb.com/[05-] bb [u=1-4][l=1-8/u].pdf"
 
-"eu.com/[n=01-74]" -o "[n] eu [u=1-4][l=1-4/u]#{rb::r}[s=1-2/l].pdf"
---output_method "r:f(); i('u','l'); e('{R*2}'); if v('u')%2 == 0 && v('l')%4 == 0 && v('s') == 2"
+"eu.com/[n=01-74]" -o "[n] eu [u=1-4][l=1-4/u]#{rb:1:r}[s=1-2/l].pdf"
+--output_method "r:i('u','l'); e('{R*2}'); if v('u')%2 == 0 && v('l')%4 == 0 && v('s') == 2"
+
+-o
+-w --out-method
+-m --in-method
+
+#{rb:1:r}
+-1 = at beginning
+ 0 = current place
+ 1 = at end
+:: = default to 1
 
 {} = set
 [] = range
@@ -38,7 +52,6 @@ Name = "Not cURl w/ ruBY"
 rb = ruby alias
 i  = ignore()
 e  = evaluate()
-f  = finish() # so can do before or after
 
 [l=1-8/u*2]
 {s=one,two/l*2}
@@ -47,88 +60,19 @@ f  = finish() # so can do before or after
 
 =end
 
+# vars/:    (x)Var       ( )RangeVar   ( )SetVar        ( )VarFactory
+# methods/: ( )Method    ( )RubyMethod ( )MethodFactory
+# :         (x)ExpParser (x)ExpStr     ( )parser_errors
+#           ( )Parser    ( )Runner
+
+require 'bundler/setup'
+
+require 'nurby/exp_parser'
+require 'nurby/exp_str'
+
+require 'nurby/vars/var'
+
 module Nurby
-  class Var
-    attr_accessor :id
-    attr_accessor :per_var_id
-    attr_accessor :times
-    attr_accessor :value
-    
-    def parse(exp_parser,closing_tag=nil)
-      # TODO: clear variables?
-      
-      closing_tag_end = closing_tag[-1]
-      has_closing_tag = false
-      
-      exp_parser.start_str('v') # For no ID specified
-      
-      while exp_parser.next_chr?()
-        if exp_parser.has_escape?()
-          next
-        end
-        
-        case exp_parser[0]
-        when '='
-          if !exp_parser.has_str?('=')
-            @id = exp_parser.get_str().chop() # Chop off '='
-            @id = nil if @id.empty?
-            
-            exp_parser.stop_strs()
-            exp_parser.start_str('=')
-          end
-        when '/'
-          if !exp_parser.has_str?('/')
-            exp_parser.stop_strs()
-            exp_parser.start_str('/')
-          end
-        when '*'
-          if !exp_parser.has_str?('*')
-            exp_parser.stop_strs()
-            exp_parser.start_str('*')
-          end
-        when closing_tag_end
-          s = exp_parser.get_str()
-          s = s[s.length - closing_tag.length..-1]
-          
-          if s == closing_tag
-            has_closing_tag = true
-            break
-          end
-        end
-      end
-      
-      if !has_closing_tag
-        # TODO: raise good error
-        raise "Missing closing tag"
-      end
-      
-      if exp_parser.has_str?('/')
-        @per_var_id = exp_parser.get_str('/').chop()
-        # TODO: raise good error
-        raise "No per var" if @per_var_id.nil? || @per_var_id.empty?
-      end
-      if exp_parser.has_str?('*')
-        @times = exp_parser.get_str('*').chop()
-        # TODO: raise good error
-        raise "No times" if @times.nil? || @times.empty?
-        # TODO: catch and raise if not int
-        @times = @times.to_i
-      end
-      
-      if exp_parser.has_str?('=')
-        @value = exp_parser.get_str('=').chop()
-      else
-        @value = exp_parser.get_str('v').chop()
-      end
-      if @value.nil? || @value.empty?
-        # TODO: raise good error
-        raise "No value"
-      end
-      
-      return ExpParser.new(@value)
-    end
-  end
-  
   module VarFactory
     @@next_id = 1
     @@vars = {}
@@ -136,7 +80,7 @@ module Nurby
     def self.check_vars
       @@vars.each do |var|
         if !@@vars.include?(var.per_var_id)
-          raise "PerVar[#{var.per_var_id}] from Var[#{var.id}] does not exist"
+          raise "Per var[#{var.per_var_id}] from var[#{var.id}] does not exist"
         end
       end
     end
@@ -180,6 +124,15 @@ module Nurby
     attr_accessor :end_value
     attr_accessor :step
     attr_accessor :zeros
+    
+    def parse(exp_parser)
+      exp_parser = super(exp_parser,']')
+      
+      # only allow a-z,A-Z,0-9
+      
+      while exp_parser.next_chr?()
+      end
+    end
   end
   
   class SetVar < Var
@@ -205,114 +158,6 @@ module Nurby
   end
   
   class Parser
-  end
-  
-  class ExpStr
-    attr_accessor :id
-    attr_accessor :is_stop
-    attr_accessor :str
-    
-    def initialize(id)
-      @id = id
-      
-      reset()
-    end
-    
-    def concat(str)
-      return @is_stop ? @str : @str.concat(str)
-    end
-    
-    def reset()
-      @is_stop = false
-      @str = ''
-    end
-    
-    def stop()
-      @is_stop = true
-    end
-    
-    def stop?()
-      return @is_stop
-    end
-  end
-  
-  class ExpParser
-    attr_accessor :exp
-    attr_accessor :exp_str
-    attr_accessor :exp_strs
-    attr_accessor :has_escape
-    attr_accessor :index
-    
-    def initialize(exp)
-      @exp = exp
-      @exp_str = ExpStr.new(nil)
-      @exp_strs = {}
-      @has_escape = false
-      @index = 0
-    end
-    
-    def [](relative_index)
-      return @exp_str.str[@exp_str.str.length - 1 + relative_index]
-    end
-    
-    def next_chr?()
-      if @index >= @exp.length
-        return false
-      end
-      if @exp[@index] == '\\'
-        @has_escape = !@has_escape
-      end
-      
-      c = @exp[@index]
-      
-      # FIXME: need to only concat if !has_escape, also fix Var loop
-      @exp_str.concat(c)
-      
-      @exp_strs.each_value do |exp_str|
-        exp_str.concat(c)
-      end
-      
-      @index += 1
-      
-      return true
-    end
-    
-    def start_str(id)
-      exp_str = @exp_strs[id]
-      
-      if exp_str.nil?
-        exp_str = ExpStr.new(id)
-        @exp_strs[id] = exp_str
-      else
-        exp_str.reset()
-      end
-      
-      return exp_str
-    end
-    
-    def stop_strs()
-      @exp_strs.each_value do |exp_str|
-        exp_str.stop()
-      end
-    end
-    
-    def get_str(id=nil)
-      if id.nil?
-        return @exp_str.str
-      end
-      
-      exp_str = @exp_strs[id]
-      
-      return exp_str.nil? ? nil : exp_str.str
-    end
-    
-    def has_escape?()
-      return @has_escape
-    end
-    
-    def has_str?(id)
-      return @exp_strs.include?(id)
-    end
   end
   
   class Runner

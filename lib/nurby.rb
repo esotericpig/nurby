@@ -62,17 +62,20 @@ e  = evaluate()
 
 # vars/:    (x)Var       ( )RangeVar   ( )SetVar        ( )VarFactory
 # methods/: ( )Method    ( )RubyMethod ( )MethodFactory
-# :         (x)ExpParser (x)ExpStr     ( )parser_errors
+# :         (x)ExpParser (x)ExpStr     (x)parser_errors
 #           ( )Parser    ( )Runner
 
 require 'bundler/setup'
 
+require 'nurby/errors/errors'
+
 require 'nurby/exp_parser'
-require 'nurby/exp_str'
+require 'nurby/exp_saver'
 
 require 'nurby/vars/var'
 
 module Nurby
+  # TODO: catch ParseError and add var ID ($1)
   module VarFactory
     @@next_id = 1
     @@vars = {}
@@ -168,89 +171,18 @@ module Nurby
   end
 end
 
-v = Nurby::Var.new()
-v.parse(Nurby::ExpParser.new('l=1-4/u*2]'),']')
+begin
+  exp = 'l=1-4/u*2]'
+  v = Nurby::Var.new()
+  v.parse(Nurby::ExpParser.new(exp),']')
 
-puts v.id
-puts v.value
-puts v.per_var_id
-puts v.times
-
-=begin
-$anonymous_var_count = 0
-VARS = []
-
-class Var
+  puts "exp: #{exp}"
+  puts "id:  #{v.id}"
+  puts "val: #{v.value}"
+  puts "/:   #{v.per_var_id}"
+  puts "*:   #{v.times}"
+rescue Nurby::NurbyError => ne
+  puts "#{(ne.exit_code.nil?) ? nil : ne.exit_code.code}: #{ne.message}"
+  puts
+  raise
 end
-
-class RangeVar
-  attr_accessor :id
-  attr_accessor :begin_value
-  attr_accessor :end_value
-  attr_accessor :per_var
-  attr_accessor :value
-  attr_accessor :zeros
-end
-
-def parse_range(range,index)
-  range.gsub!(/[[:space:]]+/,'')
-  id = nil
-  
-  if range.include?('=')
-    range = range.split('=')
-    id = range[0]
-    
-    if VARS.include?(id)
-      raise "Var ID[#{range[0]}] already exists"
-    end
-    
-    range = range[1]
-  else
-    $anonymous_var_count += 1
-    id = "$#{$anonymous_var_count}"
-  end
-  
-  VARS.push(id) # need var class
-  
-  return "%s"
-end
-
-def parse(nurby_url)
-  has_prev_slash = false
-  parsed_url = ''
-  i = -1
-  
-  while (i += 1) < nurby_url.length
-    c = nurby_url[i]
-    
-    if c == '\\'
-      has_prev_slash = !has_prev_slash
-    elsif !has_prev_slash
-      if c == '['
-        i1 = i
-        j = -1
-        
-        while (i1 += 1) < nurby_url.length
-          if nurby_url[i1] == ']'
-            j = i1
-            break
-          end
-        end
-        
-        if j == -1
-          raise "'[' with no closing ']' @ index[#{i}]"
-        end
-        
-        c = parse_range(nurby_url[i + 1..j - 1],i)
-        i = i1
-      end
-    end
-    
-    parsed_url += c
-  end
-  
-  puts parsed_url
-end
-
-parse(ARGV[0])
-=end

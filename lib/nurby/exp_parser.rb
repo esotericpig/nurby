@@ -18,36 +18,36 @@
 # along with nurby.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-require 'nurby/exp_str'
+require 'nurby/exp_saver'
 
 ###
-# By design, there is no stop_str() for @exp_str.
+# By design, there is no stop_saver() for @exp_saver.
 ###
 module Nurby
   class ExpParser
-    attr_reader :escape
+    attr_reader :escapables
     attr_reader :escape_chr
-    attr_reader :escapes
     attr_reader :exp
-    attr_reader :exp_str
-    attr_reader :exp_strs
+    attr_reader :exp_saver
+    attr_reader :exp_savers
     attr_reader :index
-    attr_reader :running_exp_strs # Unnecessary, but maybe makes it faster in the loop?
+    attr_reader :is_escaped
+    attr_reader :running_exp_savers
     
     def initialize(exp,escape_chr='\\')
-      @escape = false
+      @escapables = []
       @escape_chr = escape_chr
-      @escapes = []
       @exp = exp
-      @exp_str = ExpStr.new(nil)
-      @exp_strs = {}
+      @exp_saver = ExpSaver.new(nil)
+      @exp_savers = {}
       @index = 0
-      @running_exp_strs = {}
+      @is_escaped = false
+      @running_exp_savers = {} # Unnecessary, but maybe makes it faster in the loop?
     end
     
     def [](relative_index)
-      # Don't use @index because @exp_str doesn't include @escape_chr and can be reset
-      return @exp_str.str[@exp_str.str.length - 1 + relative_index]
+      # Don't use @index because @exp_saver doesn't include @escape_chr and can be reset
+      return @exp_saver.str[@exp_saver.str.length - 1 + relative_index]
     end
     
     def next_chr?()
@@ -55,17 +55,17 @@ module Nurby
         return false
       end
       
-      @escape = (@exp[@index] == @escape_chr) ? !@escape : false
-      @escapes.push(@escape)
+      @is_escaped = (@exp[@index] == @escape_chr) ? !@is_escaped : false
+      @escapables.push(@is_escaped)
       
-      # If "\\", then only add '\'; if "\[", then only add '['
-      if !@escape
+      # If "\\", then only add '\'; if "\[", then only add '['; etc.
+      if !@is_escaped
         c = @exp[@index]
         
-        @exp_str.concat(c)
+        @exp_saver.save(c)
         
-        @running_exp_strs.each_value do |exp_str|
-          exp_str.concat(c)
+        @running_exp_savers.each_value do |exp_saver|
+          exp_saver.save(c)
         end
       end
       
@@ -74,70 +74,78 @@ module Nurby
       return true
     end
     
-    def reset_all_strs()
-      @exp_str.reset()
-      reset_strs()
+    def reset_all_savers()
+      @exp_saver.reset()
+      reset_savers()
     end
     
-    def reset_str(id=nil,stop_strs=true)
+    def reset_saver(id=nil,stop_savers=true)
       if id.nil?
-        self.stop_strs() if stop_strs
+        self.stop_savers() if stop_savers
         
-        return @exp_str.reset()
+        return @exp_saver.reset()
       end
       
-      return start_str(id,stop_strs)
+      return start_saver(id,stop_savers)
     end
     
-    def reset_strs()
-      @exp_strs.each do |id,exp_str|
-        exp_str.reset()
-        @running_exp_strs[id] = exp_str
+    def reset_savers()
+      @exp_savers.each do |id,exp_saver|
+        exp_saver.reset()
+        @running_exp_savers[id] = exp_saver
       end
     end
     
-    def start_str(id,stop_strs=true)
-      self.stop_strs() if stop_strs
+    def start_saver(id,stop_savers=true)
+      self.stop_savers() if stop_savers
       
-      exp_str = @exp_strs[id]
+      exp_saver = @exp_savers[id]
       
-      if exp_str.nil?
-        exp_str = ExpStr.new(id)
-        @exp_strs[id] = exp_str
+      if exp_saver.nil?
+        exp_saver = ExpSaver.new(id)
+        @exp_savers[id] = exp_saver
       else
-        exp_str.reset()
+        exp_saver.reset()
       end
       
-      @running_exp_strs[id] = exp_str
+      @running_exp_savers[id] = exp_saver
       
-      return exp_str
+      return exp_saver
     end
     
-    def stop_strs()
-      @exp_strs.each_value do |exp_str|
-        exp_str.stop()
+    def stop_savers()
+      @exp_savers.each_value do |exp_saver|
+        exp_saver.stop()
       end
       
-      @running_exp_strs.clear()
+      @running_exp_savers.clear()
     end
     
-    def get_str(id=nil)
+    def get_saver(id=nil)
       if id.nil?
-        return @exp_str.str
+        return @exp_saver
       end
       
-      exp_str = @exp_strs[id]
+      exp_saver = @exp_savers[id]
       
-      return (exp_str.nil?) ? nil : exp_str.str
+      return (exp_saver.nil?) ? nil : exp_saver
     end
     
     def escaped?(relative_index=-1)
-      # Don't use @index because @escapes could be modified
-      return @escapes[@escapes.length - 1 + relative_index]
+      # Don't use @index because @escapables could be modified
+      return @is_escaped || @escapables[@escapables.length - 1 + relative_index]
     end
     
-    def has_str?(id)
-      return @exp_strs.include?(id)
+    def has_saver?(id)
+      return @exp_savers.include?(id)
+    end
+    
+    def to_s()
+      s = ''
+      s << "[#{@exp.chars.join(', ')}]\n"
+      s << "[#{@escapables.map{|e| (e ? '1' : '0')}.join(', ')}]\n"
+      
+      return s
     end
   end
 end

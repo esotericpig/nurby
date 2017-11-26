@@ -18,9 +18,9 @@
 # along with nurby.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-require 'nurby/exp_parser'
+require 'nurby/errors/parse_errors'
 
-# TODO: throw custom-errors; possibly catch in VarFactory so can use id or generated-id ($1)
+require 'nurby/exp_parser'
 
 module Nurby
   class Var
@@ -43,7 +43,7 @@ module Nurby
     def parse(exp_parser,closing_chr=nil)
       has_closing_chr = (closing_chr.nil?) ? true : false
       
-      exp_parser.start_str('v') # For no ID specified
+      exp_parser.start_saver('v') # For no ID specified
       
       while exp_parser.next_chr?()
         if exp_parser.escaped?()
@@ -52,16 +52,16 @@ module Nurby
         
         case exp_parser[0]
         when '='
-          if !exp_parser.has_str?('=')
-            @id = exp_parser.get_str().chop() # Chop off '='
+          if !exp_parser.has_saver?('=')
+            @id = exp_parser.get_saver().str.chop() # Chop off '='
             @id = nil if @id.empty?
             
-            exp_parser.start_str('=')
+            exp_parser.start_saver('=')
           end
         when '/'
-          exp_parser.start_str('/') if !exp_parser.has_str?('/')
+          exp_parser.start_saver('/') if !exp_parser.has_saver?('/')
         when '*'
-          exp_parser.start_str('*') if !exp_parser.has_str?('*')
+          exp_parser.start_saver('*') if !exp_parser.has_saver?('*')
         when closing_chr
           has_closing_chr = true
           break
@@ -69,28 +69,28 @@ module Nurby
       end
       
       if !has_closing_chr
-        raise "Missing closing char: #{closing_chr}"
+        raise NoClosingTag,"Missing closing char '#{closing_chr}'"
       end
       
-      if exp_parser.has_str?('/')
-        @per_var_id = exp_parser.get_str('/').chop()
-        raise "No per var ID specified for '/'" if @per_var_id.nil? || @per_var_id.empty?
+      if exp_parser.has_saver?('/')
+        @per_var_id = exp_parser.get_saver('/').str.chop()
+        raise NoVarID,"Missing per var ID for '/'" if @per_var_id.empty?
       end
       
-      if exp_parser.has_str?('*')
-        @times = exp_parser.get_str('*').chop()
-        raise "No times number specified for '*'" if @times.nil? || @times.empty?
+      if exp_parser.has_saver?('*')
+        @times = exp_parser.get_saver('*').str.chop()
+        raise NoNumber,"Missing number of times for '*'" if @times.empty?
         @times = @times.to_i
-        raise "Times number for '*' is less than one: #{@times}" if @times < 1
+        raise InvalidNumber,"Number of times for '*' is less than one [#{@times}]" if @times < 1
       end
       
-      if exp_parser.has_str?('=')
-        @value = exp_parser.get_str('=').chop()
+      if exp_parser.has_saver?('=')
+        @value = exp_parser.get_saver('=').str.chop()
       else
-        @value = exp_parser.get_str('v').chop()
+        @value = exp_parser.get_saver('v').str.chop()
       end
       
-      raise "No value specified for var" if @value.nil? || @value.empty?
+      raise NoValue,"Missing value" if @value.empty?
       
       return ExpParser.new(@value)
     end

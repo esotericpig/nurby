@@ -40,54 +40,77 @@ module Nurby
       @value = nil
     end
     
-    def parse(exp_parser,closing_chr=nil)
-      has_closing_chr = (closing_chr.nil?) ? true : false
+    def parse(exp_parser,opening_tag=nil,closing_tag=nil)
+      closing_tag_begin = (closing_tag.nil?) ? nil : closing_tag[0]
+      has_closing_tag = closing_tag.nil?
+      has_opening_tag = opening_tag.nil?
       
-      exp_parser.start_saver('v') # For no ID specified
+      if !has_opening_tag
+        exp_parser.start_saver('ot') # Opening tag
+        
+        while exp_parser.next_chr?()
+          next if exp_parser.escaped?()
+          
+          if exp_parser.saver('ot').str == opening_tag
+            exp_parser.stop_savers()
+            has_opening_tag = true
+            
+            break
+          end
+        end
+      end
+      
+      raise NoOpeningTag,%Q(Missing opening tag "#{opening_tag}") if !has_opening_tag
+      
+      exp_parser.start_saver('id') # For possible ID
+      exp_parser.start_saver('v') # Value for no '=' specified
       
       while exp_parser.next_chr?()
-        if exp_parser.escaped?()
-          next
+        next if exp_parser.escaped?()
+        
+        c = exp_parser[0]
+        
+        # Don't put this in the switch-statement as closing_tag_begin might be the same as another char
+        if c == closing_tag_begin
+          if exp_parser.look_ahead?(closing_tag)
+            has_closing_tag = true
+            break
+          end
         end
         
-        case exp_parser[0]
+        case c
         when '='
-          if !exp_parser.has_saver?('=')
-            @id = exp_parser.get_saver().str.chop() # Chop off '='
+          if !exp_parser.saver?('=')
+            @id = exp_parser.saver('id').str.chop() # Chop off '='
             @id = nil if @id.empty?
             
-            exp_parser.start_saver('=')
+            exp_parser.start_saver('=',true,false)
           end
         when '/'
-          exp_parser.start_saver('/') if !exp_parser.has_saver?('/')
+          exp_parser.start_saver('/',true)
         when '*'
-          exp_parser.start_saver('*') if !exp_parser.has_saver?('*')
-        when closing_chr
-          has_closing_chr = true
-          break
+          exp_parser.start_saver('*',true)
         end
       end
       
-      if !has_closing_chr
-        raise NoClosingTag,"Missing closing char '#{closing_chr}'"
-      end
+      raise NoClosingTag,%Q(Missing closing tag "#{closing_tag}") if !has_closing_tag
       
-      if exp_parser.has_saver?('/')
-        @per_var_id = exp_parser.get_saver('/').str.chop()
+      if exp_parser.saver?('/')
+        @per_var_id = exp_parser.saver('/').str.chop()
         raise NoVarID,"Missing per var ID for '/'" if @per_var_id.empty?
       end
       
-      if exp_parser.has_saver?('*')
-        @times = exp_parser.get_saver('*').str.chop()
+      if exp_parser.saver?('*')
+        @times = exp_parser.saver('*').str.chop()
         raise NoNumber,"Missing number of times for '*'" if @times.empty?
         @times = @times.to_i
         raise InvalidNumber,"Number of times for '*' is less than one [#{@times}]" if @times < 1
       end
       
-      if exp_parser.has_saver?('=')
-        @value = exp_parser.get_saver('=').str.chop()
+      if exp_parser.saver?('=')
+        @value = exp_parser.saver('=').str.chop()
       else
-        @value = exp_parser.get_saver('v').str.chop()
+        @value = exp_parser.saver('v').str.chop()
       end
       
       raise NoValue,"Missing value" if @value.empty?

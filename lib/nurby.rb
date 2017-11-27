@@ -91,6 +91,7 @@ module Nurby
     def self.parse(exp_parser)
       var = nil
       
+      # FIXME: clone exp_parser before passing it to classes for savers
       case exp_parser[0]
       when '['
         var = RangeVar.new(exp_parser)
@@ -126,15 +127,34 @@ module Nurby
     attr_accessor :begin_value
     attr_accessor :end_value
     attr_accessor :step
-    attr_accessor :zeros
+    attr_accessor :zeros # or spaces; prob make @prefix and @prefixcount
+    
+    # Var needs times_index
     
     def parse(exp_parser)
-      exp_parser = super(exp_parser,']')
+      exp_parser = super(exp_parser,'[',']')
       
       # only allow a-z,A-Z,0-9
       
+      exp_parser.start_saver('b')
+      
       while exp_parser.next_chr?()
+        next if exp_parser.escaped?
+        
+        case exp_parser[0]
+        when '-'
+          exp_parser.start_saver('e') if !exp_parser.has_saver?('e')
+        when ':'
+          exp_parser.start_saver(':') if !exp_parser.has_saver?(':')
+        end
       end
+      
+      @begin_value = exp_parser.get_saver('b')
+      @end_value = exp_parser.get_saver('e')
+      @step = exp_parser.get_saver(':') # if have :, can't be null
+      
+      puts @begin_value.str.chop # can't be null
+      puts @end_value.str # can be null
     end
   end
   
@@ -172,10 +192,11 @@ module Nurby
 end
 
 begin
-  exp = 'l=1-4/u*2]'
+  exp = '[l=1-4/u*2]'
+  ep = Nurby::ExpParser.new(exp)
   v = Nurby::Var.new()
-  v.parse(Nurby::ExpParser.new(exp),']')
-
+  v.parse(ep,'[',']')
+  
   puts "exp: #{exp}"
   puts "id:  #{v.id}"
   puts "val: #{v.value}"

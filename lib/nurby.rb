@@ -131,8 +131,8 @@ module Nurby
     
     # Var needs times_index
     
-    def parse(exp_parser)
-      exp_parser = super(exp_parser,'[',']')
+    def parse(exp_parser,parsed_opening_tag=false,parsed_closing_tag=false)
+      exp_parser = super(exp_parser,parsed_opening_tag ? nil : '[',parsed_closing_tag ? ']' : nil)
       
       # only allow a-z,A-Z,0-9
       
@@ -192,7 +192,7 @@ module Nurby
 end
 
 begin
-  exp = '[l=1-4/u*2]'
+  exp = (ARGV.length > 0) ? ARGV[0] : '[l=1-4/u*2]'
   ep = Nurby::ExpParser.new(exp)
   v = Nurby::Var.new()
   v.parse(ep,'[',']')

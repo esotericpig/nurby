@@ -88,6 +88,31 @@ module Nurby
       return new_str
     end
     
+    def find!(str)
+      return true if str.length < 1
+      
+      i = 0
+      s = ''
+      
+      while next_chr?()
+        next if escaped?()
+        
+        c = self[0]
+        
+        if c == str[i]
+          s << c
+          
+          break if (i += 1) >= str.length
+        elsif i != 0
+          # Start over and try again
+          i = 0
+          s = ''
+        end
+      end
+      
+      return s == str
+    end
+    
     def look_ahead(length)
       return nil if length < 1
       
@@ -107,6 +132,8 @@ module Nurby
     end
     
     def look_ahead?(str)
+      return true if str.length < 1
+      
       exp_parser = ExpParser.new(@exp[@index - 1..-1],@escape_chr)
       
       i = 0

@@ -45,21 +45,7 @@ module Nurby
       has_closing_tag = closing_tag.nil?
       has_opening_tag = opening_tag.nil?
       
-      if !has_opening_tag
-        exp_parser.start_saver('ot') # Opening tag
-        
-        while exp_parser.next_chr?()
-          next if exp_parser.escaped?()
-          
-          if exp_parser.saver('ot').str == opening_tag
-            exp_parser.stop_savers()
-            has_opening_tag = true
-            
-            break
-          end
-        end
-      end
-      
+      has_opening_tag = exp_parser.find!(opening_tag) if !has_opening_tag
       raise NoOpeningTag,%Q(Missing opening tag "#{opening_tag}") if !has_opening_tag
       
       exp_parser.start_saver('id') # For possible ID

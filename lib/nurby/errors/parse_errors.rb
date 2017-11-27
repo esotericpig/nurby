@@ -40,6 +40,9 @@ module Nurby
   class NoNumber < ParseError
   end
   
+  class NoOpeningTag < ParseError
+  end
+  
   class NoValue < ParseError
   end
   

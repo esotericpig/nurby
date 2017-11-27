@@ -23,9 +23,22 @@ module Nurby
     attr_reader :id
     attr_accessor :str
     
-    def initialize(id)
+    def initialize(id,is_escaped=true)
       @id = id
+      @is_escaped = is_escaped
       reset()
+    end
+    
+    def [](relative_index)
+      return @str[@str.length - 1 + relative_index]
+    end
+    
+    def escaped=(e)
+      return @is_escaped = e
+    end
+    
+    def escaped?()
+      return @is_escaped
     end
     
     def reset()

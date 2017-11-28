@@ -61,7 +61,7 @@ module Nurby
         
         # Don't put this in the switch-statement as closing_tag_begin might be the same as another char
         if c == closing_tag_begin
-          if exp_parser.look_ahead?(closing_tag)
+          if closing_tag.length <= 1 || exp_parser.look_ahead?(closing_tag)
             has_closing_tag = true
             break
           end

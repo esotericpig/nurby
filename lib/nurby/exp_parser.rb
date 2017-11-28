@@ -68,11 +68,7 @@ module Nurby
       end
     end
     
-    def self.escape(str,escape_chr=DEFAULT_ESCAPE_CHR)
-      return escape_chrs(str,escape_chr,'[',']','{','}','#')
-    end
-    
-    def self.escape_chrs(str,escape_chr=DEFAULT_ESCAPE_CHR,*chrs_to_escape)
+    def self.escape(str,escape_chr=DEFAULT_ESCAPE_CHR,*chrs_to_escape)
       chrs_to_escape = chrs_to_escape.to_set().add(escape_chr)
       exp_parser = ExpParser.new(str,escape_chr)
       new_str = ''
@@ -206,7 +202,7 @@ module Nurby
         return @exp_saver.reset()
       end
       
-      return start_saver(id,stop_savers)
+      return start_saver(id,stop_savers,false)
     end
     
     def reset_savers()

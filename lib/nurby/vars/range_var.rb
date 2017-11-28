@@ -92,12 +92,12 @@ module Nurby
         @end_value = exp_parser.saver('e').str.chop()
         
         if @end_value.length > 0
-          @end_value_min_size = Util.index_digit_or_letter(@end_value)
-          @end_value_min_size = 0 if @end_value_min_size.nil?
+          end_value_min_size = Util.index_digit_or_letter(@end_value)
+          end_value_min_size = 0 if end_value_min_size.nil?
           @prefix = @end_value[0] if @prefix.nil? && Util.prefix?(@end_value[0])
           @end_value = Util.gsub_spaces(@end_value)
-          @end_value_min_size += @end_value.length
-          @min_size = @end_value_min_size if @end_value_min_size > @min_size
+          end_value_min_size += @end_value.length
+          @min_size = end_value_min_size if end_value_min_size > @min_size
         end
         
         # Empty @end_value is allowed if at least one var has @end_value

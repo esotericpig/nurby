@@ -34,6 +34,12 @@ module Nurby
   class InvalidNumber < ParseError
   end
   
+  class InvalidValue < ParseError
+  end
+  
+  class MismatchValue < ParseError
+  end
+  
   class NoClosingTag < ParseError
   end
   

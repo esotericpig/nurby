@@ -32,29 +32,40 @@ module Nurby
   class ExpParser
     DEFAULT_ESCAPE_CHR = '\\'
     
-    attr_reader :escapables
     attr_accessor :escape_chr
+    attr_reader :escaped
+    attr_reader :escaped_chrs
     attr_reader :exp
     attr_reader :exp_saver
     attr_reader :exp_savers
     attr_reader :index
-    attr_reader :is_escaped
     attr_reader :running_exp_savers
     
     def initialize(exp,escape_chr=DEFAULT_ESCAPE_CHR)
-      @escapables = []
       @escape_chr = escape_chr
+      @escaped = false
+      @escaped_chrs = []
       @exp = exp
       @exp_saver = ExpSaver.new(nil)
       @exp_savers = {}
       @index = 0
-      @is_escaped = false
-      @running_exp_savers = {} # Unnecessary, but maybe makes it faster in the loop?
+      @running_exp_savers = {}
     end
     
     def [](relative_index)
       # Don't use @index because @exp_saver doesn't include @escape_chr and can be reset
       return @exp_saver[relative_index]
+    end
+    
+    def end_parsing(add_chops=true)
+      if add_chops
+        @exp_saver.str << ' '
+        
+        # Only do it for the last ones running
+        @running_exp_savers.each_value do |exp_saver|
+          exp_saver.str << ' '
+        end
+      end
     end
     
     def self.escape(str,escape_chr=DEFAULT_ESCAPE_CHR)
@@ -66,7 +77,7 @@ module Nurby
       exp_parser = ExpParser.new(str,escape_chr)
       new_str = ''
       
-      exp_parser.exp_saver.escaped = false
+      exp_parser.exp_saver.escape = false
       
       while exp_parser.next_chr?()
         c = exp_parser[0]
@@ -158,16 +169,16 @@ module Nurby
         return false
       end
       
-      @is_escaped = (@exp[@index] == @escape_chr) ? !@is_escaped : false
-      @escapables.push(@is_escaped)
+      @escaped = (@exp[@index] == @escape_chr) ? !@escaped : false
+      @escaped_chrs.push(@escaped)
       
       c = @exp[@index]
       
-      if @is_escaped
-        @exp_saver.save(c) if !@exp_saver.escaped?()
+      if @escaped
+        @exp_saver.save(c) if !@exp_saver.escape?()
         
         @running_exp_savers.each_value do |exp_saver|
-          exp_saver.save(c) if !exp_saver.escaped?()
+          exp_saver.save(c) if !exp_saver.escape?()
         end
       # If "\\", then only save '\'; if "\[", then only save '['; etc.
       else
@@ -205,14 +216,14 @@ module Nurby
       end
     end
     
-    def start_saver(id,stop_savers=false,only_if_no_saver=true,is_escaped=true)
+    def start_saver(id,stop_savers=false,only_if_no_saver=true,escape=true)
       return nil if only_if_no_saver && @exp_savers.include?(id)
       self.stop_savers() if stop_savers
       
       exp_saver = @exp_savers[id]
       
       if exp_saver.nil?
-        exp_saver = ExpSaver.new(id,is_escaped)
+        exp_saver = ExpSaver.new(id,escape)
         @exp_savers[id] = exp_saver
       else
         exp_saver.reset()
@@ -242,8 +253,12 @@ module Nurby
     end
     
     def escaped?(relative_index=-1)
-      # Don't use @index because @escapables could be modified
-      return @is_escaped || @escapables[@escapables.length - 1 + relative_index]
+      return @escaped || escaped_chr?(relative_index)
+    end
+    
+    def escaped_chr?(relative_index=-1)
+      # Don't use @index because @escaped_chrs could be modified
+      return @escaped_chrs[@escaped_chrs.length - 1 + relative_index]
     end
     
     def saver?(id)
@@ -252,8 +267,13 @@ module Nurby
     
     def to_s()
       s = ''
-      s << "[#{@exp.chars.join(', ')}]\n"
-      s << "[#{@escapables.map{|e| (e ? '1' : '0')}.join(', ')}]\n"
+      
+      s << "- exp:      [#{@exp.chars.join(', ')}]\n"
+      s << "- esc_chrs: [#{@escaped_chrs.map{|e| (e ? '1' : ' ')}.join(', ')}]\n"
+      s << "- ind[%03d]: [#{Array.new(@exp.length).map.with_index{|x,i| (i == @index) ? 'X' : ' '}.join(', ')}]\n" % @index
+      s << "- exp_svr:  [#{@exp_saver.str.chars.join(', ')}]\n"
+      s << "- exp_svrs: [#{@exp_savers.keys.join(', ')}]\n"
+      s << "- run_svrs: [#{@running_exp_savers.keys.join(', ')}]\n"
       
       return s
     end

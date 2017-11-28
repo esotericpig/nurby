@@ -60,18 +60,23 @@ e  = evaluate()
 
 =end
 
-# vars/:    (x)Var       ( )RangeVar   ( )SetVar        ( )VarFactory
+# vars/:    (x)Var       (x)RangeVar   ( )SetVar        ( )VarFactory
 # methods/: ( )Method    ( )RubyMethod ( )MethodFactory
 # :         (x)ExpParser (x)ExpStr     (x)parser_errors
 #           ( )Parser    ( )Runner
 
 require 'bundler/setup'
 
-require 'nurby/errors/errors'
-
 require 'nurby/exp_parser'
 require 'nurby/exp_saver'
+require 'nurby/util'
+require 'nurby/version'
 
+require 'nurby/errors/errors'
+require 'nurby/errors/exit_codes'
+require 'nurby/errors/parse_errors'
+
+require 'nurby/vars/range_var'
 require 'nurby/vars/var'
 
 module Nurby
@@ -120,44 +125,6 @@ module Nurby
     end
   end
   
-  # can be a string or int, so need to test if digit
-  # if less than, must decrement (step)
-  # (x.ord +/- 1).chr for entire string (only a-z, A-Z; else carry/borrow)
-  class RangeVar < Var
-    attr_accessor :begin_value
-    attr_accessor :end_value
-    attr_accessor :step
-    attr_accessor :zeros # or spaces; prob make @prefix and @prefixcount
-    
-    # Var needs times_index
-    
-    def parse(exp_parser,parsed_opening_tag=false,parsed_closing_tag=false)
-      exp_parser = super(exp_parser,parsed_opening_tag ? nil : '[',parsed_closing_tag ? ']' : nil)
-      
-      # only allow a-z,A-Z,0-9
-      
-      exp_parser.start_saver('b')
-      
-      while exp_parser.next_chr?()
-        next if exp_parser.escaped?
-        
-        case exp_parser[0]
-        when '-'
-          exp_parser.start_saver('e') if !exp_parser.has_saver?('e')
-        when ':'
-          exp_parser.start_saver(':') if !exp_parser.has_saver?(':')
-        end
-      end
-      
-      @begin_value = exp_parser.get_saver('b')
-      @end_value = exp_parser.get_saver('e')
-      @step = exp_parser.get_saver(':') # if have :, can't be null
-      
-      puts @begin_value.str.chop # can't be null
-      puts @end_value.str # can be null
-    end
-  end
-  
   class SetVar < Var
     attr_accessor :index
     attr_accessor :values
@@ -194,14 +161,12 @@ end
 begin
   exp = (ARGV.length > 0) ? ARGV[0] : '[l=1-4/u*2]'
   ep = Nurby::ExpParser.new(exp)
-  v = Nurby::Var.new()
-  v.parse(ep,'[',']')
+  v = Nurby::RangeVar.new()
+  v.parse(ep)
   
   puts "exp: #{exp}"
-  puts "id:  #{v.id}"
-  puts "val: #{v.value}"
-  puts "/:   #{v.per_var_id}"
-  puts "*:   #{v.times}"
+  puts "ep:\n#{ep}"
+  puts "var:\n#{v}"
 rescue Nurby::NurbyError => ne
   puts "#{(ne.exit_code.nil?) ? nil : ne.exit_code.code}: #{ne.message}"
   puts

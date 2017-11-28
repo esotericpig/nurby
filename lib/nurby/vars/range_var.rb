@@ -135,15 +135,15 @@ module Nurby
       
       if exp_parser.saver?(':')
         @step = Util.gsub_spaces(exp_parser.saver(':').str.chop())
-        raise NoValue,"Missing step ':' value for range" if @step.empty?
-        raise InvalidValue,%Q(Step ':' value "#{@step}" for range is not an integer) if !Util.int?(@step)
+        raise NoValue,"Missing step value for ':' in range" if @step.empty?
+        raise InvalidValue,%Q(Step value "#{@step}" for ':' in range is not an integer) if !Util.int?(@step)
         @step = @step.to_i
       else
         @step = value_step
       end
       
       if @step == 0 || (@step * value_step) != @step
-        raise InvalidValue,%Q(Step ':' value "#{@step}" for range could create an infinite loop)
+        raise InvalidValue,%Q(Step value "#{@step}" for ':' in range could create an infinite loop)
       end
     end
     

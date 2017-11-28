@@ -29,6 +29,10 @@ module Nurby
   # if less than, must decrement (step)
   # (x.ord +/- 1).chr for entire string (only a-z, A-Z; else carry/borrow)
   class RangeVar < Var
+    # Util.escape(...)
+    CLOSING_TAG = ']'
+    OPENING_TAG = '['
+    
     attr_accessor :begin_value
     attr_accessor :end_value
     attr_accessor :min_size
@@ -36,6 +40,7 @@ module Nurby
     attr_accessor :step
     
     def initialize
+      super()
       clear()
     end
     
@@ -50,7 +55,8 @@ module Nurby
     end
     
     def parse(exp_parser,parsed_opening_tag=false,parsed_closing_tag=false)
-      exp_parser = super(exp_parser,parsed_opening_tag ? nil : '[',parsed_closing_tag ? nil : ']')
+      exp_parser = super(exp_parser,parsed_opening_tag ? nil : OPENING_TAG,
+        parsed_closing_tag ? nil : CLOSING_TAG)
       
       exp_parser.start_saver('b')
       

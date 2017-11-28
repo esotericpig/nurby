@@ -18,14 +18,16 @@
 # along with nurby.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-require 'nurby/errors/parse_errors'
-
 require 'nurby/exp_parser'
+require 'nurby/util'
+
+require 'nurby/errors/parse_errors'
 
 module Nurby
   class Var
     attr_reader :id
     attr_accessor :per_var_id
+    attr_accessor :time
     attr_accessor :times
     attr_accessor :value
     
@@ -36,6 +38,7 @@ module Nurby
     def clear()
       @id = nil
       @per_var_id = nil
+      @time = 0
       @times = nil
       @value = nil
     end
@@ -48,8 +51,8 @@ module Nurby
       has_opening_tag = exp_parser.find!(opening_tag) if !has_opening_tag
       raise NoOpeningTag,%Q(Missing opening tag "#{opening_tag}") if !has_opening_tag
       
-      exp_parser.start_saver('id') # For possible ID
-      exp_parser.start_saver('v') # Value for no '=' specified
+      exp_parser.start_saver('id')
+      exp_parser.start_saver('v',false,false,false) # Value for no '=' specified
       
       while exp_parser.next_chr?()
         next if exp_parser.escaped?()
@@ -70,7 +73,7 @@ module Nurby
             @id = exp_parser.saver('id').str.chop() # Chop off '='
             @id = nil if @id.empty?
             
-            exp_parser.start_saver('=',true,false)
+            exp_parser.start_saver('=',true,false,false)
           end
         when '/'
           exp_parser.start_saver('/',true)
@@ -78,6 +81,8 @@ module Nurby
           exp_parser.start_saver('*',true)
         end
       end
+      
+      exp_parser.end_parsing(closing_tag.nil?)
       
       raise NoClosingTag,%Q(Missing closing tag "#{closing_tag}") if !has_closing_tag
       
@@ -87,10 +92,10 @@ module Nurby
       end
       
       if exp_parser.saver?('*')
-        @times = exp_parser.saver('*').str.chop()
+        @times = Util.gsub_spaces(exp_parser.saver('*').str.chop())
         raise NoNumber,"Missing number of times for '*'" if @times.empty?
         @times = @times.to_i
-        raise InvalidNumber,"Number of times for '*' is less than one [#{@times}]" if @times < 1
+        raise InvalidNumber,%Q(Number of times "#{@times}" for '*' is less than one) if @times < 1
       end
       
       if exp_parser.saver?('=')
@@ -102,6 +107,18 @@ module Nurby
       raise NoValue,"Missing value" if @value.empty?
       
       return ExpParser.new(@value)
+    end
+    
+    def to_s()
+      s = ''
+      
+      s << "- id:       #{@id}\n"
+      s << "- per_var:  #{@per_var_id}\n"
+      s << "- tm:       #{@time}\n"
+      s << "- tms:      #{@times}\n"
+      s << "- val:      #{@value}\n"
+      
+      return s
     end
   end
 end

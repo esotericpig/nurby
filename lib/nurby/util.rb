@@ -18,37 +18,57 @@
 # along with nurby.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-module Util
-  def self.gsub_spaces(str)
-    return str.gsub(/[[:space:]]+/,'')
-  end
-  
-  def self.gsub_spaces!(str)
-    str.gsub!(/[[:space:]]+/,'') # Don't return this; if no sub, then nil
-    return str
-  end
-  
-  def self.index_digit_or_letter(str)
-    return str.index(/[\da-zA-Z]/)
-  end
-  
-  def self.int?(str)
-    return str =~ /\A([[:space:]]*[+\-]?[[:space:]]*)([[:space:]]*\d+[[:space:]]*)+\z/
-  end
-  
-  def self.prefix?(chr)
-    return chr == '0' || chr == ' '
-  end
-  
-  def self.whole_num?(str)
-    return str =~ /\A([[:space:]]*+?[[:space:]]*)([[:space:]]*\d+[[:space:]]*)+\z/
-  end
-  
-  def self.whole_num_or_word?(str)
-    return whole_num?(str) || word?(str)
-  end
-  
-  def self.word?(str)
-    return str =~ /\A([[:space:]]*[a-zA-Z]+[[:space:]]*)+\z/
+require 'nurby/exp_parser'
+
+require 'nurby/vars/range_var.rb'
+require 'nurby/vars/set_var.rb'
+
+module Nurby
+  module Util
+    def self.escape(str,escape_chr=ExpParser::DEFAULT_ESCAPE_CHR)
+      chrs_to_escape = []
+      var_classes = [RangeVar,SetVar]
+      
+      var_classes.each do |var_class|
+        chrs_to_escape.concat(var_class::CLOSING_TAG.chars)
+        chrs_to_escape.concat(var_class::OPENING_TAG.chars)
+      end
+      
+      # escape(...) will create a Set of chrs
+      return ExpParser.escape(str,escape_chr,*chrs_to_escape)
+    end
+    
+    def self.gsub_spaces(str)
+      return str.gsub(/[[:space:]]+/,'')
+    end
+    
+    def self.gsub_spaces!(str)
+      str.gsub!(/[[:space:]]+/,'') # Don't return this; if no sub, then nil
+      return str
+    end
+    
+    def self.index_digit_or_letter(str)
+      return str.index(/[\da-zA-Z]/)
+    end
+    
+    def self.int?(str)
+      return str =~ /\A([[:space:]]*[+\-]?[[:space:]]*)([[:space:]]*\d+[[:space:]]*)+\z/
+    end
+    
+    def self.prefix?(chr)
+      return chr == '0' || chr == ' '
+    end
+    
+    def self.whole_num?(str)
+      return str =~ /\A([[:space:]]*+?[[:space:]]*)([[:space:]]*\d+[[:space:]]*)+\z/
+    end
+    
+    def self.whole_num_or_word?(str)
+      return whole_num?(str) || word?(str)
+    end
+    
+    def self.word?(str)
+      return str =~ /\A([[:space:]]*[a-zA-Z]+[[:space:]]*)+\z/
+    end
   end
 end

@@ -60,7 +60,7 @@ e  = evaluate()
 
 =end
 
-# vars/:    (x)Var       (x)RangeVar   ( )SetVar        ( )VarFactory
+# vars/:    (x)Var       (x)RangeVar   (x)SetVar        ( )VarFactory
 # methods/: ( )Method    ( )RubyMethod ( )MethodFactory
 # :         (x)ExpParser (x)ExpStr     (x)parser_errors
 #           ( )Parser    ( )Runner
@@ -77,6 +77,7 @@ require 'nurby/errors/exit_codes'
 require 'nurby/errors/parse_errors'
 
 require 'nurby/vars/range_var'
+require 'nurby/vars/set_var'
 require 'nurby/vars/var'
 
 module Nurby
@@ -123,11 +124,6 @@ module Nurby
       
       return var
     end
-  end
-  
-  class SetVar < Var
-    attr_accessor :index
-    attr_accessor :values
   end
   
   class Method

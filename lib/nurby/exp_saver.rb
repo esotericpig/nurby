@@ -20,12 +20,18 @@
 
 module Nurby
   class ExpSaver
+    attr_accessor :escape
     attr_reader :id
+    attr_reader :stop
     attr_accessor :str
     
-    def initialize(id,is_escaped=true)
+    alias_method :escape?,:escape
+    alias_method :stop?,:stop
+    
+    def initialize(id,escape=true)
+      @escape = escape
       @id = id
-      @is_escaped = is_escaped
+      
       reset()
     end
     
@@ -33,35 +39,23 @@ module Nurby
       return @str[@str.length - 1 + relative_index]
     end
     
-    def escaped=(e)
-      return @is_escaped = e
-    end
-    
-    def escaped?()
-      return @is_escaped
-    end
-    
     def reset()
-      @is_stopped = false
+      @stop = false
       @str = ''
       
       return self
     end
     
     def save(str)
-      @str.concat(str) if !@is_stopped
+      @str.concat(str) if !@stop
       
       return self
     end
     
     def stop()
-      @is_stopped = true
+      @stop = true
       
       return self
-    end
-    
-    def stop?()
-      return @is_stopped
     end
   end
 end

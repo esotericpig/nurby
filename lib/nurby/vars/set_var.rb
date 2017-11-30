@@ -22,9 +22,8 @@ require 'nurby/vars/var'
 
 module Nurby
   class SetVar < Var
-    # Util.escape(...)
-    CLOSING_TAG = '}'
-    OPENING_TAG = '{'
+    CLOSING_TAG = '}' # @see Util.escape(...)
+    OPENING_TAG = '{' # @see Util.escape(...)
     
     attr_accessor :index
     attr_accessor :values
@@ -39,7 +38,7 @@ module Nurby
       
       @index = 0
       @values = []
-   end
+    end
     
     def parse(exp_parser,parsed_opening_tag=false,parsed_closing_tag=false)
       exp_parser = super(exp_parser,parsed_opening_tag ? nil : OPENING_TAG,
@@ -61,13 +60,13 @@ module Nurby
       
       @values.push(exp_parser.saver('v').str.chop()) if exp_parser.saver?('v')
       
-      # Don't validate any of the values; let it fly; even allow empty string ''
+      # Don't validate any of the values; let it fly; even allow empty string '' or no values
     end
     
     def to_s()
       s = super()
       
-      s << "- ind:      #{@index}\n"
+      s << "- index:    #{@index}\n"
       s << "- vals:     [#{@values.join(', ')}]\n"
       
       return s

@@ -50,9 +50,10 @@ Gem::Specification.new do |spec|
   spec.executables            = ['nurby']
   spec.post_install_message   = 'You can now use "nurby" on the command-line.'
   
+  # 2.4.0 for Hash.transform_values(...)
   # 2.3.0 for indention heredoc "<<~"
   # 1.9.0 for Hash preserving order
-  spec.required_ruby_version  = '>= 2.3.0'
+  spec.required_ruby_version  = '>= 2.4.0'
   
   spec.add_runtime_dependency 'shikashi','~> 0.6.0'
   

@@ -49,7 +49,7 @@ module Nurby
       has_opening_tag = opening_tag.nil?
       
       has_opening_tag = exp_parser.find!(opening_tag) if !has_opening_tag
-      raise NoOpeningTag,%Q(Missing opening tag "#{opening_tag}") if !has_opening_tag
+      raise NoOpeningTag,%Q^Missing opening tag ("#{opening_tag}") in var^ if !has_opening_tag
       
       exp_parser.start_saver('id')
       exp_parser.start_saver('v',false,false,false) # Value for no '=' specified
@@ -84,18 +84,18 @@ module Nurby
       
       exp_parser.end_parsing(closing_tag.nil?)
       
-      raise NoClosingTag,%Q(Missing closing tag "#{closing_tag}") if !has_closing_tag
+      raise NoClosingTag,%Q^Missing closing tag ("#{closing_tag}") in var^ if !has_closing_tag
       
       if exp_parser.saver?('/')
         @per_var_id = exp_parser.saver('/').str.chop()
-        raise NoVarID,"Missing per var ID for '/'" if @per_var_id.empty?
+        raise NoVarID,"Missing per var ('/') ID in var" if @per_var_id.empty?
       end
       
       if exp_parser.saver?('*')
         @times = Util.gsub_spaces(exp_parser.saver('*').str.chop())
-        raise NoNumber,"Missing number of times for '*'" if @times.empty?
+        raise NoValue,"Missing number of times ('*') value in var" if @times.empty?
         @times = @times.to_i
-        raise InvalidNumber,%Q(Number of times "#{@times}" for '*' is less than one) if @times < 1
+        raise InvalidValue,%Q^Number of times ('*') value ("#{@times}") is less than one in var^ if @times < 1
       end
       
       if exp_parser.saver?('=')
@@ -104,7 +104,7 @@ module Nurby
         @value = exp_parser.saver('v').str.chop()
       end
       
-      raise NoValue,"Missing value" if @value.empty?
+      raise NoValue,"Missing value in var" if @value.empty?
       
       return ExpParser.new(@value)
     end
@@ -114,8 +114,8 @@ module Nurby
       
       s << "- id:       #{@id}\n"
       s << "- per_var:  #{@per_var_id}\n"
-      s << "- tm:       #{@time}\n"
-      s << "- tms:      #{@times}\n"
+      s << "- time:     #{@time}\n"
+      s << "- times:    #{@times}\n"
       s << "- val:      #{@value}\n"
       
       return s

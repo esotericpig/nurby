@@ -3,7 +3,7 @@ Not cURl w/ ruBY
 
 A curl-like Ruby app that adds missing features and allows Ruby injection (not meant as a curl replacement).
 
-**Note:** This program is still currently in development on v0.5.0.  The first working version will be v1.0.0.
+**Note:** This project is currently in development on v0.5.1. The first working version will be v1.0.0.
 
 Goals for the project:
 

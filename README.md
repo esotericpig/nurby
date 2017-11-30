@@ -3,6 +3,41 @@ Not cURl w/ ruBY
 
 A curl-like Ruby app that adds missing features and allows Ruby injection (not meant as a curl replacement).
 
+This program is still currently in development on v0.5.0.  The first working version will be v1.0.0.
+
+Goals for the project:
+
+```
+"bb.com/[05-] bb [u=1-4][l=1-8/u].pdf"
+
+"eu.com/[n=01-74]" -o "[n] eu [u=1-4][l=1-4/u]#{rb:1:r}[s=1-2/l].pdf"
+--out-method "r:i(2,'u','l'); e('{R*2}'); if v('u')%2 == 0 && v('l')%4 == 0 && v('s') == 2"
+
+-o --out-file
+-w --out-method
+-m --in-method
+-x (disable "#{}")
+
+{} = set
+[] = range
+
+#{rb:1:r}
+#{ruby::method}
+-1 = at beginning
+ 0 = current place
+ 1 = at end
+:: = default to 1
+
+rb = ruby alias
+i  = ignore(num_of_times,*var_ids)
+e  = eval(nurby_exp_str)
+
+[l=1-8/u*2]
+{s=one,two/l*2}
+
+\{,\[,\# can all be escaped
+```
+
 ## License
 > nurby (https://github.com/esotericpig/nurby)  
 > Copyright (c) 2017 Jonathan Bradley Whited (@esotericpig)  

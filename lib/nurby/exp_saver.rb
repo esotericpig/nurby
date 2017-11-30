@@ -35,6 +35,15 @@ module Nurby
       reset()
     end
     
+    def initialize_copy(original)
+      super(original)
+      
+      @escape = @escape.clone()
+      @id = @id.clone()
+      @stop = @stop.clone()
+      @str = @str.clone()
+    end
+    
     def [](relative_index)
       return @str[@str.length - 1 + relative_index]
     end

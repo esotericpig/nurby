@@ -52,9 +52,40 @@ module Nurby
       @running_exp_savers = {}
     end
     
+    def initialize_copy(original)
+      super(original)
+      
+      @escape_chr = @escape_chr.clone()
+      @escaped = @escaped.clone()
+      @escaped_chrs = @escaped_chrs.map(&:clone)
+      @exp = @exp.clone()
+      @exp_saver = @exp_saver.clone()
+      @exp_savers = @exp_savers.transform_values(&:clone)
+      @index = @index.clone()
+      
+      # Contains references to @exp_savers
+      @running_exp_savers = @running_exp_savers.transform_values do |res|
+        es = @exp_savers[res.id]
+        
+        # Contains an ExpSaver not in @exp_savers?
+        if es.nil?
+          res = res.clone()
+          @exp_savers[res.id] = res
+          es = res
+        end
+        
+        es
+      end
+    end
+    
     def [](relative_index)
       # Don't use @index because @exp_saver doesn't include @escape_chr and can be reset
       return @exp_saver[relative_index]
+    end
+    
+    def clear_savers()
+      @exp_savers.clear()
+      @running_exp_savers.clear()
     end
     
     def end_parsing(add_chops=true)
@@ -230,6 +261,17 @@ module Nurby
       return exp_saver
     end
     
+    def stop_saver(id)
+      exp_saver = @exp_savers[id]
+      
+      if !exp_saver.nil?
+        exp_saver.stop()
+        exp_saver = @running_exp_savers.delete(id)
+      end
+      
+      return exp_saver
+    end
+    
     def stop_savers()
       @exp_savers.each_value do |exp_saver|
         exp_saver.stop()
@@ -264,10 +306,10 @@ module Nurby
     def to_s()
       s = ''
       
-      s << "- exp:      [#{@exp.chars.join(', ')}]\n"
-      s << "- esc_chrs: [#{@escaped_chrs.map{|e| (e ? '1' : ' ')}.join(', ')}]\n"
-      s << "- ind[%03d]: [#{Array.new(@exp.length).map.with_index{|x,i| (i == @index) ? 'X' : ' '}.join(', ')}]\n" % @index
-      s << "- exp_svr:  [#{@exp_saver.str.chars.join(', ')}]\n"
+      s << "- exp:      [#{@exp.chars.join(' ')}]\n"
+      s << "- esc_chrs: [#{@escaped_chrs.map{|e| (e ? '1' : ' ')}.join(' ')}]\n"
+      s << "- ind[%03d]: [#{Array.new(@exp.length).map.with_index{|x,i| (i == @index) ? 'X' : ' '}.join(' ')}]\n" % @index
+      s << "- exp_svr:  [#{@exp_saver.str.chars.join(' ')}]\n"
       s << "- exp_svrs: [#{@exp_savers.keys.join(', ')}]\n"
       s << "- run_svrs: [#{@running_exp_savers.keys.join(', ')}]\n"
       

@@ -24,10 +24,13 @@
 module Nurby
   class NurbyError < StandardError
     attr_accessor :exit_code
+    attr_accessor :message
     
     def initialize(message=nil,exit_code=nil)
       super(message)
+      
       @exit_code = exit_code
+      @message = message
     end
   end
 end

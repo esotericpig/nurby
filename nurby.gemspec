@@ -55,7 +55,9 @@ Gem::Specification.new do |spec|
   # 1.9.0 for Hash preserving order
   spec.required_ruby_version  = '>= 2.4.0'
   
-  spec.add_runtime_dependency 'shikashi','~> 0.6.0'
+  # TODO: too restricted and a lot of dependencies
+  # TODO: try 1: ukutaht/safe_ruby, duckinator/sicuro, Veraticus/Sandrbox, QaDeS/sandboxed ($SAFE)
+  #spec.add_runtime_dependency 'shikashi','~> 0.6.0'
   
   spec.add_development_dependency 'bundler','>= 1.15'
 end

@@ -50,7 +50,7 @@ module Nurby
     attr_accessor :eval
     attr_accessor :id
     
-    # #call() # uses shikashi
+    # #call() # uses some sandbox
   end
   
   module MethodFactory

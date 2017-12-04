@@ -22,15 +22,16 @@ module Nurby
   class ExpSaver
     attr_accessor :escape
     attr_reader :id
+    attr_accessor :options
     attr_reader :stop
     attr_accessor :str
     
     alias_method :escape?,:escape
-    alias_method :stop?,:stop
     
-    def initialize(id,escape=true)
+    def initialize(id,escape: true,**options)
       @escape = escape
       @id = id
+      @options = options
       
       reset()
     end
@@ -40,12 +41,9 @@ module Nurby
       
       @escape = @escape.clone()
       @id = @id.clone()
+      @options = @options.clone()
       @stop = @stop.clone()
       @str = @str.clone()
-    end
-    
-    def [](relative_index)
-      return @str[@str.length - 1 + relative_index]
     end
     
     def reset()
@@ -53,6 +51,10 @@ module Nurby
       @str = ''
       
       return self
+    end
+    
+    def [](relative_index)
+      return @str[@str.length - 1 + relative_index]
     end
     
     def save(str)
@@ -65,6 +67,10 @@ module Nurby
       @stop = true
       
       return self
+    end
+    
+    def stop?()
+      return @stop
     end
   end
 end

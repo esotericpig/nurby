@@ -39,9 +39,10 @@ module Nurby
     attr_reader :exp_saver
     attr_reader :exp_savers
     attr_reader :index
+    attr_accessor :options
     attr_reader :running_exp_savers
     
-    def initialize(exp,escape_chr=DEFAULT_ESCAPE_CHR)
+    def initialize(exp,escape_chr: DEFAULT_ESCAPE_CHR,**options)
       @escape_chr = escape_chr
       @escaped = false
       @escaped_chrs = []
@@ -49,6 +50,7 @@ module Nurby
       @exp_saver = ExpSaver.new(nil)
       @exp_savers = {}
       @index = 0
+      @options = options
       @running_exp_savers = {}
     end
     
@@ -62,16 +64,16 @@ module Nurby
       @exp_saver = @exp_saver.clone()
       @exp_savers = @exp_savers.transform_values(&:clone)
       @index = @index.clone()
+      @options = @options.clone()
       
       # Contains references to @exp_savers
-      @running_exp_savers = @running_exp_savers.transform_values do |res|
+      @running_exp_savers = @running_exp_savers.transform_values() do |res|
         es = @exp_savers[res.id]
         
         # Contains an ExpSaver not in @exp_savers?
         if es.nil?
-          res = res.clone()
-          @exp_savers[res.id] = res
-          es = res
+          es = res.clone()
+          @exp_savers[res.id] = es
         end
         
         es
@@ -88,7 +90,7 @@ module Nurby
       @running_exp_savers.clear()
     end
     
-    def end_parsing(add_chops=true)
+    def end_parsing(add_chops: true,**options)
       if add_chops
         @exp_saver.str << ' '
         
@@ -99,7 +101,11 @@ module Nurby
       end
     end
     
-    def self.escape(str,escape_chr=DEFAULT_ESCAPE_CHR,*chrs_to_escape)
+    def escape(str,*chrs_to_escape)
+      return self.class.escape_chrs(str,@escape_chr,*chrs_to_escape)
+    end
+    
+    def self.escape_chrs(str,escape_chr=DEFAULT_ESCAPE_CHR,*chrs_to_escape)
       chrs_to_escape = chrs_to_escape.to_set().add(escape_chr)
       exp_parser = ExpParser.new(str,escape_chr)
       new_str = ''
@@ -226,14 +232,14 @@ module Nurby
       reset_savers()
     end
     
-    def reset_saver(id=nil,stop_savers=false)
+    def reset_saver(id=nil,stop_savers: false,**options)
       if id.nil?
         self.stop_savers() if stop_savers
         
         return @exp_saver.reset()
       end
       
-      return start_saver(id,stop_savers,false)
+      return start_saver(id,stop_savers: stop_savers,if_no_saver: false,**options)
     end
     
     def reset_savers()
@@ -243,14 +249,14 @@ module Nurby
       end
     end
     
-    def start_saver(id,stop_savers=false,only_if_no_saver=true,escape=true)
-      return nil if only_if_no_saver && @exp_savers.include?(id)
+    def start_saver(id,stop_savers: false,if_no_saver: true,escape: true,**options)
+      return nil if if_no_saver && @exp_savers.include?(id) && !@exp_savers[id].stop?()
       self.stop_savers() if stop_savers
       
       exp_saver = @exp_savers[id]
       
       if exp_saver.nil?
-        exp_saver = ExpSaver.new(id,escape)
+        exp_saver = ExpSaver.new(id,escape: escape,**options)
         @exp_savers[id] = exp_saver
       else
         exp_saver.reset()
@@ -259,6 +265,10 @@ module Nurby
       @running_exp_savers[id] = exp_saver
       
       return exp_saver
+    end
+    
+    def start_saver!(id,**options)
+      return start_saver(id,if_no_saver: false,**options)
     end
     
     def stop_saver(id)

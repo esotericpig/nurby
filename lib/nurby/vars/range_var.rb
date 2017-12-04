@@ -24,9 +24,13 @@ require 'nurby/errors/parse_errors'
 
 require 'nurby/vars/var'
 
+###
+# An empty @end_value is allowed, so in order to avoid an infinite loop, all of the vars should be checked for
+# an @end_value. See VarFactory.check_vars() for an example.
+# 
+# @see VarFactory.check_vars()
+###
 module Nurby
-  # can be a string or int, so need to test if digit
-  # if less than, must decrement (step)
   # (x.ord +/- 1).chr for entire string (only a-z, A-Z; else carry/borrow)
   class RangeVar < Var
     CLOSING_TAG = ']' # @see Util.escape(...)
@@ -53,11 +57,11 @@ module Nurby
       @step = 0
     end
     
-    def parse(exp_parser,parsed_opening_tag=false,parsed_closing_tag=false)
+    def parse!(exp_parser,parsed_opening_tag=false,parsed_closing_tag=false)
       exp_parser = super(exp_parser,parsed_opening_tag ? nil : OPENING_TAG,
         parsed_closing_tag ? nil : CLOSING_TAG)
       
-      exp_parser.start_saver('b')
+      exp_parser.start_saver!('b')
       
       while exp_parser.next_chr?()
         next if exp_parser.escaped?()
@@ -65,10 +69,10 @@ module Nurby
         case exp_parser[0]
         when '-'
           # Check if 'b' is '-', as it could be a negative number ("[-4-0]").
-          # If 'e' is a negative number, start_saver(...) already checks if it exists.
-          exp_parser.start_saver('e',true) if Util.gsub_spaces(exp_parser.saver('b').str) != '-'
+          # If 'e' is a negative number, start_saver!(...) already checks if it exists.
+          exp_parser.start_saver!('e',stop_savers: true) if Util.gsub_spaces(exp_parser.saver('b').str) != '-'
         when ':'
-          exp_parser.start_saver(':',true)
+          exp_parser.start_saver!(':',stop_savers: true)
         end
       end
       
@@ -182,6 +186,8 @@ module Nurby
       if @step == 0 || (!@end_value.nil? && (@step ^ value_step) < 0)
         raise InvalidValue,%Q(Step (':') value ("#{@step}") in range var could create an infinite loop)
       end
+      
+      @value = @begin_value
     end
     
     def to_s()

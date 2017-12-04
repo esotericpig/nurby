@@ -38,8 +38,8 @@ module Nurby
     end
     
     def check_vars
-      has_range_var = false
-      one_range_has_end = false
+      has_range = false
+      range_has_end = false
       
       @vars.each do |id,var|
         if !var.per_var_id.nil? && !@vars.include?(var.per_var_id)
@@ -47,13 +47,13 @@ module Nurby
         end
         
         if var.is_a?(RangeVar)
-          has_range_var = true
-          one_range_has_end = true if !var.end_value.nil?
+          has_range = true
+          range_has_end = true if !var.end_value.nil?() && var.per_var_id.nil?()
         end
       end
       
-      if has_range_var && !one_range_has_end
-        raise NoValue,"At least one range var must have an end value to avoid an infinite loop"
+      if has_range && !range_has_end
+        raise NoValue,"At least one range var must have an end value without a per var to avoid an infinite loop"
       end
     end
     
@@ -73,6 +73,8 @@ module Nurby
     end
     
     def parse!(exp_parser)
+      return if exp_parser.escaped?()
+      
       var = nil
       
       begin
@@ -81,26 +83,26 @@ module Nurby
           var = RangeVar.new()
         when '{'
           # Is not a method?
-          if exp_parser[-1] != '#'
+          if exp_parser.escaped_chr?(-2) || exp_parser[-1] != '#'
             var = SetVar.new()
           end
         end
         
-        if !var.nil?
-          var.parse(exp_parser,true)
-          
-          if var.id.nil? || var.id.empty?
-            var.id = "$#{@next_id}"
-            @next_id += 1
-          end
-          
-          raise InvalidVarID,"Var ID[#{var.id}] already exists; duplicate IDs" if @vars.include?(var.id)
-          @vars[var.id] = var
-        end
+        var.parse!(exp_parser,true) if !var.nil?()
       rescue ParseError => pe
-        var_id = (var.id.nil?) ? "$#{@next_id}" : var.id
+        var_id = (var.id.nil?()) ? "$#{@next_id}" : var.id
         pe.message = "Var[#{var_id}]: #{pe.message}"
         raise
+      end
+      
+      if !var.nil?()
+        if var.id.nil?() || var.id.empty?()
+          var.id = "$#{@next_id}"
+          @next_id += 1
+        end
+        
+        raise InvalidVarID,"Var ID[#{var.id}] already exists; duplicate IDs" if @vars.include?(var.id)
+        @vars[var.id] = var
       end
       
       return var

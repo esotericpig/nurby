@@ -25,7 +25,7 @@ require 'nurby/errors/parse_errors'
 
 module Nurby
   class Var
-    attr_reader :id
+    attr_accessor :id
     attr_accessor :per_var_id
     attr_accessor :time
     attr_accessor :times
@@ -43,7 +43,7 @@ module Nurby
       @value = nil
     end
     
-    def parse(exp_parser,opening_tag=nil,closing_tag=nil)
+    def parse!(exp_parser,opening_tag=nil,closing_tag=nil)
       closing_tag_begin = (closing_tag.nil?) ? nil : closing_tag[0]
       has_closing_tag = closing_tag.nil?
       has_opening_tag = opening_tag.nil?
@@ -51,8 +51,10 @@ module Nurby
       has_opening_tag = exp_parser.find!(opening_tag) if !has_opening_tag
       raise NoOpeningTag,%Q^Missing opening tag ("#{opening_tag}") in var^ if !has_opening_tag
       
-      exp_parser.start_saver('id')
-      exp_parser.start_saver('v',false,false,false) # Value for no '=' specified
+      has_id = false
+      
+      exp_parser.start_saver!('id')
+      exp_parser.start_saver!('v',escape: false) # Value for no '=' specified
       
       while exp_parser.next_chr?()
         next if exp_parser.escaped?()
@@ -69,20 +71,22 @@ module Nurby
         
         case c
         when '='
-          if !exp_parser.saver?('=')
+          if !has_id
             @id = exp_parser.saver('id').str.chop() # Chop off '='
             @id = nil if @id.empty?
             
-            exp_parser.start_saver('=',true,false,false)
+            exp_parser.start_saver!('=',stop_savers: true,if_no_saver: false,escape: false)
+            
+            has_id = true
           end
         when '/'
-          exp_parser.start_saver('/',true)
+          exp_parser.start_saver!('/',stop_savers: true)
         when '*'
-          exp_parser.start_saver('*',true)
+          exp_parser.start_saver!('*',stop_savers: true)
         end
       end
       
-      exp_parser.end_parsing(closing_tag.nil?)
+      exp_parser.end_parsing(add_chops: closing_tag.nil?)
       
       raise NoClosingTag,%Q^Missing closing tag ("#{closing_tag}") in var^ if !has_closing_tag
       

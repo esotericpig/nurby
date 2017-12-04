@@ -40,11 +40,11 @@ module Nurby
       @values = []
     end
     
-    def parse(exp_parser,parsed_opening_tag=false,parsed_closing_tag=false)
+    def parse!(exp_parser,parsed_opening_tag=false,parsed_closing_tag=false)
       exp_parser = super(exp_parser,parsed_opening_tag ? nil : OPENING_TAG,
         parsed_closing_tag ? nil : CLOSING_TAG)
       
-      exp_parser.start_saver('v')
+      exp_parser.start_saver!('v')
       
       while exp_parser.next_chr?()
         next if exp_parser.escaped?()
@@ -61,6 +61,8 @@ module Nurby
       @values.push(exp_parser.saver('v').str.chop()) if exp_parser.saver?('v')
       
       # Don't validate any of the values; let it fly; even allow empty string '' or no values
+      
+      @value = @values.first()
     end
     
     def to_s()

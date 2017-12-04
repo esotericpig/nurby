@@ -47,7 +47,7 @@ require 'nurby/vars/var_factory'
 
 module Nurby
   class Method
-    attr_accessor :eval
+    attr_accessor :eval_str
     attr_accessor :id
     
     # #call() # uses some sandbox
@@ -80,16 +80,15 @@ begin
   vf = Nurby::VarFactory.new()
   v = nil
   
+  puts "exp: #{exp}"
+  puts "ep:\n#{ep}"
+  
   while ep.next_chr?()
-    pv = vf.parse!(ep)
-    v = pv if !pv.nil?
+    v = vf.parse!(ep)
+    puts "var[#{v.id}]:\n#{v}" if !v.nil?()
   end
   
   vf.check_vars()
-  
-  puts "exp: #{exp}"
-  puts "ep:\n#{ep}"
-  puts "var:\n#{v}"
 rescue Nurby::NurbyError => ne
   puts "#{(ne.exit_code.nil?) ? nil : ne.exit_code.code}: #{ne.message}"
   puts

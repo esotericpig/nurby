@@ -40,17 +40,18 @@ module Nurby
       return true
     end
     
-    def self.escape(str,escape_chr=ExpParser::DEFAULT_ESCAPE_CHR)
-      chrs_to_escape = []
-      var_classes = [RangeVar,SetVar]
+    def self.escape(str,escape_chr: ExpParser::DEFAULT_ESCAPE_CHR,var_classes: [],chrs_to_escape: [])
+      var_classes.push(RangeVar)
+      var_classes.push(SetVar)
       
       var_classes.each do |var_class|
+        # concat(...) for array of chrs
         chrs_to_escape.concat(var_class::CLOSING_TAG.chars) if var_class.const_defined?(:CLOSING_TAG)
         chrs_to_escape.concat(var_class::OPENING_TAG.chars) if var_class.const_defined?(:OPENING_TAG)
       end
       
       # escape(...) will create a Set of chrs
-      return ExpParser.escape(str,escape_chr,*chrs_to_escape)
+      return ExpParser.escape_chrs(str,escape_chr,*chrs_to_escape)
     end
     
     def self.gsub_spaces(str)

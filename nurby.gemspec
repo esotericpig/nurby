@@ -38,9 +38,9 @@ Gem::Specification.new do |spec|
                                 EOD
   spec.homepage               = 'https://github.com/esotericpig/nurby'
   
+  # Even though it is an app, don't add "Gemfile.lock" so that ExpParser can be used as a library
   spec.files                  = Dir.glob("{bin,lib}/**/*") + %w(
                                     Gemfile
-                                    Gemfile.lock
                                     LICENSE
                                     nurby.gemspec
                                     README.md
@@ -50,9 +50,6 @@ Gem::Specification.new do |spec|
   spec.executables            = ['nurby']
   spec.post_install_message   = 'You can now use "nurby" on the command-line.'
   
-  # 2.4.0 for Hash.transform_values(...)
-  # 2.3.0 for indention heredoc "<<~"
-  # 1.9.0 for Hash preserving order
   spec.required_ruby_version  = '>= 2.4.0'
   
   # TODO: too restricted and a lot of dependencies

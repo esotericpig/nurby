@@ -69,8 +69,23 @@ module Nurby
       return self
     end
     
+    def run?()
+      return !@stop
+    end
+    
     def stop?()
       return @stop
+    end
+    
+    def to_s()
+      s = ''
+      
+      s << "[#{@id}]"
+      s << "[e:#{@escape ? '1' : '0'}]"
+      s << "[s:#{@stop ? '1' : '0'}]"
+      s << ":#{@str}"
+      
+      return s
     end
   end
 end

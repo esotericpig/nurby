@@ -31,24 +31,14 @@ module Nurby
     end
   end
   
-  class InvalidValue < ParseError
-  end
-  
-  class InvalidVarID < ParseError
-  end
-  
-  class MismatchValue < ParseError
-  end
-  
-  class NoClosingTag < ParseError
-  end
-  
-  class NoOpeningTag < ParseError
-  end
-  
-  class NoValue < ParseError
-  end
-  
-  class NoVarID < ParseError
-  end
+  class InvalidMethodID < ParseError; end
+  class InvalidSymbol < ParseError; end
+  class InvalidValue < ParseError; end
+  class InvalidVarID < ParseError; end
+  class MismatchValue < ParseError; end
+  class NoClosingTag < ParseError; end
+  class NoMethodID < ParseError; end
+  class NoOpeningTag < ParseError; end
+  class NoValue < ParseError; end
+  class NoVarID < ParseError; end
 end

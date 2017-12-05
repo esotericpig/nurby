@@ -42,8 +42,13 @@ module Nurby
       range_has_end = false
       
       @vars.each do |id,var|
-        if !var.per_var_id.nil? && !@vars.include?(var.per_var_id)
-          raise InvalidVarID,"Per var[#{var.per_var_id}] from var[#{id}] does not exist"
+        if !var.per_var_id.nil?()
+          if !@vars.include?(var.per_var_id)
+            raise InvalidVarID,"Per var[#{var.per_var_id}] from var[#{id}] does not exist"
+          end
+          if id == var.per_var_id
+            raise InvalidVarID,"Per var[#{var.per_var_id}] from var[#{id}] cannot be the same ID"
+          end
         end
         
         if var.is_a?(RangeVar)

@@ -26,7 +26,7 @@ require 'nurby/vars/var'
 
 ###
 # An empty @end_value is allowed, so in order to avoid an infinite loop, all of the vars should be checked for
-# an @end_value. See VarFactory.check_vars() for an example.
+# an @end_value w/o @per_var_id. See VarFactory.check_vars() for an example.
 # 
 # @see VarFactory.check_vars()
 ###
@@ -61,22 +61,34 @@ module Nurby
       exp_parser = super(exp_parser,parsed_opening_tag ? nil : OPENING_TAG,
         parsed_closing_tag ? nil : CLOSING_TAG)
       
-      exp_parser.start_saver!('b')
+      exp_parser.clear_savers('b','e',':')
+      exp_parser.start_saver('b')
       
       while exp_parser.next_chr?()
         next if exp_parser.escaped?()
         
         case exp_parser[0]
         when '-'
-          # Check if 'b' is '-', as it could be a negative number ("[-4-0]").
-          # If 'e' is a negative number, start_saver!(...) already checks if it exists.
-          exp_parser.start_saver!('e',stop_savers: true) if Util.gsub_spaces(exp_parser.saver('b').str) != '-'
+          if !exp_parser.saver?('e')
+            # Check if 'b' is a negative number
+            if Util.gsub_spaces(exp_parser.saver('b').str) != '-'
+              exp_parser.start_saver('e',stop_savers: true)
+            end
+          # Check if ':' is not running (which allows negative numbers) and 'e' is a negative number
+          elsif (!exp_parser.saver?(':') || exp_parser.saver(':').stop?()) &&
+                (exp_parser.saver('e').stop?() || Util.gsub_spaces(exp_parser.saver('e').str) != '-')
+            raise InvalidSymbol,"Too many '-' symbols in range var"
+          end
         when ':'
-          exp_parser.start_saver!(':',stop_savers: true)
+          if !exp_parser.saver?(':')
+            exp_parser.start_saver(':',stop_savers: true)
+          else
+            raise InvalidSymbol,"Too many ':' symbols in range var"
+          end
         end
       end
       
-      exp_parser.end_parsing() # Tags will always be chopped off in super()
+      exp_parser.add_saver_chops() # Tags will always be chopped off in super()
       
       @begin_value = exp_parser.saver('b').str.chop()
       
@@ -106,17 +118,17 @@ module Nurby
         
         if @end_value.length > 0
           end_min_size = Util.index_int_or_letter(@end_value)
-          end_min_size = 0 if end_min_size.nil?
-          @prefix = @end_value[0] if @prefix.nil? && Util.prefix?(@end_value[0])
+          end_min_size = 0 if end_min_size.nil?()
+          @prefix = @end_value[0] if @prefix.nil?() && Util.prefix?(@end_value[0])
           @end_value = Util.gsub_spaces!(@end_value)
           end_min_size += @end_value.length
           @min_size = end_min_size if end_min_size > @min_size
         end
         
-        # Empty @end_value is allowed if at least one var has @end_value.
+        # Empty @end_value is allowed if at least one var has @end_value w/o @per_var_id.
         # All of the vars must be checked outside of this class.
         # @see VarFactory.check_vars()
-        if @end_value.empty?
+        if @end_value.empty?()
           @end_value = nil
         else
           is_end_int = Util.int?(@end_value)
@@ -164,8 +176,8 @@ module Nurby
         end
       end
       
-      # Assume decrement for a negative number only
-      value_step = -1 if @end_value.nil? && @begin_value < 0
+      # Assume decrement for a negative number without @end_value
+      value_step = -1 if @end_value.nil?() && @begin_value < 0
       
       if exp_parser.saver?(':')
         @step = Util.gsub_spaces(exp_parser.saver(':').str.chop())
@@ -183,7 +195,7 @@ module Nurby
       # Based on the values above, value_step was set to either be 1 or -1.
       # If @step is not the same sign [(@step ^ value_step) < 0], then this will be an infinite loop.
       # For example, "[1-4:-1]" would cause an infinite loop as 1 would keep decrementing forever.
-      if @step == 0 || (!@end_value.nil? && (@step ^ value_step) < 0)
+      if @step == 0 || (!@end_value.nil?() && (@step ^ value_step) < 0)
         raise InvalidValue,%Q(Step (':') value ("#{@step}") in range var could create an infinite loop)
       end
       

@@ -44,7 +44,8 @@ module Nurby
       exp_parser = super(exp_parser,parsed_opening_tag ? nil : OPENING_TAG,
         parsed_closing_tag ? nil : CLOSING_TAG)
       
-      exp_parser.start_saver!('v')
+      exp_parser.clear_savers('v')
+      exp_parser.start_saver('v')
       
       while exp_parser.next_chr?()
         next if exp_parser.escaped?()
@@ -56,7 +57,7 @@ module Nurby
         end
       end
       
-      exp_parser.end_parsing()
+      exp_parser.add_saver_chops() # Tags will always be chopped off in super()
       
       @values.push(exp_parser.saver('v').str.chop()) if exp_parser.saver?('v')
       

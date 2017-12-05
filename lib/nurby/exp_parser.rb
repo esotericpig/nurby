@@ -26,7 +26,7 @@ require 'nurby/exp_saver'
 # By design, there is no stop_saver() for @exp_saver, as it should not be stopped.
 # 
 # This class cannot process opening and closing tags (unless they are chars).
-# It is the job of the outside class to process those with start_saver(...), look_ahead?(...), etc.
+# It is the job of the outside class to process those with find!(...) and look_ahead?(...).
 ###
 module Nurby
   class ExpParser
@@ -85,18 +85,33 @@ module Nurby
       return @exp_saver[relative_index]
     end
     
-    def clear_savers()
-      @exp_savers.clear()
-      @running_exp_savers.clear()
+    def add_saver_chops()
+      @exp_saver.str << ' '
+      
+      # Only do it for the last ones running
+      @running_exp_savers.each_value() do |exp_saver|
+        exp_saver.str << ' '
+      end
     end
     
-    def end_parsing(add_chops: true,**options)
-      if add_chops
-        @exp_saver.str << ' '
-        
-        # Only do it for the last ones running
-        @running_exp_savers.each_value do |exp_saver|
-          exp_saver.str << ' '
+    def clear_saver(id)
+      return nil if !@exp_savers.include?(id)
+      
+      exp_saver = @exp_savers[id]
+      exp_saver.stop() if !exp_saver.nil?()
+      @exp_savers.delete(id)
+      @running_exp_savers.delete(id)
+      
+      return exp_saver
+    end
+    
+    def clear_savers(*ids)
+      if ids.nil?() || ids.empty?()
+        @exp_savers.clear()
+        @running_exp_savers.clear()
+      else
+        ids.each() do |id|
+          clear_saver(id)
         end
       end
     end
@@ -132,14 +147,14 @@ module Nurby
       return new_str
     end
     
-    def find!(str)
+    def find!(str,escape: true,**options)
       return true if str.length < 1
       
       i = 0
       s = ''
       
       while next_chr?()
-        next if escaped?()
+        next if escape && escaped?()
         
         c = self[0]
         
@@ -157,16 +172,18 @@ module Nurby
       return s == str
     end
     
-    def look_ahead(length)
+    def look_ahead(length,escape: true,**options)
       return nil if length < 1
+      return ((escape && escaped?()) ? nil : self[0]) if length == 1
       
-      exp_parser = ExpParser.new(@exp[@index - 1..-1],@escape_chr)
+      exp_parser = ExpParser.new(@exp[@index - 1..-1],escape_chr: @escape_chr,**@options)
+      exp_parser.exp_saver.escape = escape
       
       i = 0
       result = ''
       
       while exp_parser.next_chr?() && i < length
-        next if exp_parser.escaped?()
+        next if escape && exp_parser.escaped?()
         
         result << exp_parser[0]
         i += 1
@@ -175,16 +192,18 @@ module Nurby
       return result
     end
     
-    def look_ahead?(str)
-      return true if str.length < 1
+    def look_ahead?(str,accept_nil: true,escape: true,**options)
+      return accept_nil if str.nil?() || str.empty?()
+      return ((escape && escaped?()) ? false : (self[0] == str)) if str.length() == 1
       
       exp_parser = ExpParser.new(@exp[@index - 1..-1],@escape_chr)
+      exp_parser.exp_saver.escape = escape
       
       i = 0
       s = ''
       
       while exp_parser.next_chr?() && i < str.length
-        next if exp_parser.escaped?()
+        next if escape && exp_parser.escaped?()
         
         c = exp_parser[0]
         
@@ -239,18 +258,26 @@ module Nurby
         return @exp_saver.reset()
       end
       
-      return start_saver(id,stop_savers: stop_savers,if_no_saver: false,**options)
+      return start_saver(id,stop_savers: stop_savers,only_if_no_saver: false,**options)
     end
     
-    def reset_savers()
-      @exp_savers.each do |id,exp_saver|
-        exp_saver.reset()
-        @running_exp_savers[id] = exp_saver
+    def reset_savers(*ids,stop_savers: false,**options)
+      if ids.nil?() || ids.empty?()
+        @exp_savers.each do |id,exp_saver|
+          exp_saver.reset()
+          @running_exp_savers[id] = exp_saver
+        end
+      else
+        self.stop_savers() if stop_savers
+        
+        ids.each() do |id|
+          reset_saver(id,stop_savers: false,**options)
+        end
       end
     end
     
-    def start_saver(id,stop_savers: false,if_no_saver: true,escape: true,**options)
-      return nil if if_no_saver && @exp_savers.include?(id) && !@exp_savers[id].stop?()
+    def start_saver(id,stop_savers: false,only_if_no_saver: true,escape: true,**options)
+      return nil if only_if_no_saver && @exp_savers.include?(id) && !@exp_savers[id].stop?()
       self.stop_savers() if stop_savers
       
       exp_saver = @exp_savers[id]
@@ -267,27 +294,51 @@ module Nurby
       return exp_saver
     end
     
-    def start_saver!(id,**options)
-      return start_saver(id,if_no_saver: false,**options)
+    def start_savers(*ids,stop_savers: false,only_if_no_savers: true,**options)
+      return if ids.nil?() || ids.empty?()
+      
+      if only_if_no_savers
+        has_no_savers = true
+        
+        ids.each() do |id|
+          if @exp_savers.include?(id) && !@exp_savers[id].stop?()
+            has_no_savers = false
+            break
+          end
+        end
+        
+        return if has_no_savers
+      end
+      
+      self.stop_savers() if stop_savers
+      
+      ids.each() do |id|
+        stop_saver(id,stop_savers: false,only_if_no_saver: only_if_no_savers,**options)
+      end
     end
     
     def stop_saver(id)
-      exp_saver = @exp_savers[id]
+      return nil if !@exp_savers.include?(id)
       
-      if !exp_saver.nil?
-        exp_saver.stop()
-        exp_saver = @running_exp_savers.delete(id)
-      end
+      exp_saver = @exp_savers[id]
+      exp_saver.stop() if !exp_saver.nil?()
+      @running_exp_savers.delete(id)
       
       return exp_saver
     end
     
-    def stop_savers()
-      @exp_savers.each_value do |exp_saver|
-        exp_saver.stop()
+    def stop_savers(*ids)
+      if ids.nil?() || ids.empty?()
+        @exp_savers.each_value() do |exp_saver|
+          exp_saver.stop()
+        end
+        
+        @running_exp_savers.clear()
+      else
+        ids.each() do |id|
+          stop_saver(id)
+        end
       end
-      
-      @running_exp_savers.clear()
     end
     
     def saver(id=nil)

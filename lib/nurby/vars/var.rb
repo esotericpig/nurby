@@ -44,49 +44,50 @@ module Nurby
     end
     
     def parse!(exp_parser,opening_tag=nil,closing_tag=nil)
-      closing_tag_begin = (closing_tag.nil?) ? nil : closing_tag[0]
-      has_closing_tag = closing_tag.nil?
-      has_opening_tag = opening_tag.nil?
+      has_closing_tag = closing_tag.nil?()
+      has_opening_tag = opening_tag.nil?()
       
       has_opening_tag = exp_parser.find!(opening_tag) if !has_opening_tag
       raise NoOpeningTag,%Q^Missing opening tag ("#{opening_tag}") in var^ if !has_opening_tag
       
-      has_id = false
-      
-      exp_parser.start_saver!('id')
-      exp_parser.start_saver!('v',escape: false) # Value for no '=' specified
+      exp_parser.clear_savers('id','v','=','/','*')
+      exp_parser.start_saver('id')
+      exp_parser.start_saver('v',escape: false) # Value for no '=' specified
       
       while exp_parser.next_chr?()
         next if exp_parser.escaped?()
         
-        c = exp_parser[0]
-        
-        # Don't put this in the switch-statement as closing_tag_begin might be the same as another char
-        if c == closing_tag_begin
-          if closing_tag.length <= 1 || exp_parser.look_ahead?(closing_tag)
-            has_closing_tag = true
-            break
-          end
+        if exp_parser.look_ahead?(closing_tag,accept_nil: false)
+          has_closing_tag = true
+          break
         end
         
-        case c
+        case exp_parser[0]
         when '='
-          if !has_id
+          if !exp_parser.saver?('=')
             @id = exp_parser.saver('id').str.chop() # Chop off '='
             @id = nil if @id.empty?
             
-            exp_parser.start_saver!('=',stop_savers: true,if_no_saver: false,escape: false)
-            
-            has_id = true
+            exp_parser.start_saver('=',stop_savers: true,escape: false)
+          else
+            raise InvalidSymbol,"Too many '=' symbols in var"
           end
         when '/'
-          exp_parser.start_saver!('/',stop_savers: true)
+          if !exp_parser.saver?('/')
+            exp_parser.start_saver('/',stop_savers: true)
+          else
+            raise InvalidSymbol,"Too many '/' symbols in var"
+          end
         when '*'
-          exp_parser.start_saver!('*',stop_savers: true)
+          if !exp_parser.saver?('*')
+            exp_parser.start_saver('*',stop_savers: true)
+          else
+            raise InvalidSymbol,"Too many '*' symbols in var"
+          end
         end
       end
       
-      exp_parser.end_parsing(add_chops: closing_tag.nil?)
+      exp_parser.add_saver_chops() if closing_tag.nil?()
       
       raise NoClosingTag,%Q^Missing closing tag ("#{closing_tag}") in var^ if !has_closing_tag
       
@@ -98,6 +99,11 @@ module Nurby
       if exp_parser.saver?('*')
         @times = Util.gsub_spaces(exp_parser.saver('*').str.chop())
         raise NoValue,"Missing number of times ('*') value in var" if @times.empty?
+        
+        if !Util.int?(@times)
+          raise InvalidValue,%Q^Number of times ('*') value ("#{@times}") is not an integer ("+/-0-9")^
+        end
+        
         @times = @times.to_i
         raise InvalidValue,%Q^Number of times ('*') value ("#{@times}") is less than one in var^ if @times < 1
       end

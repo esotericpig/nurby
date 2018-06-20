@@ -2,7 +2,7 @@
 
 ###
 # This file is part of nurby.
-# Copyright (c) 2017-2018 Jonathan Bradley Whited (@esotericpig)
+# Copyright (c) 2018 Jonathan Bradley Whited (@esotericpig)
 # 
 # nurby is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -20,13 +20,15 @@
 
 require 'nurby/vars/var'
 
+# TODO: implement
+
 module Nurby
-  class SetVar < Var
-    BEGIN_TAG = '{' # @see Util.escape(...)
-    END_TAG = '}' # @see Util.escape(...)
+  class VarVar < Var
+    BEGIN_TAG = '#[' # @see Util.escape(...)
+    END_TAG = ']' # @see Util.escape(...)
     
     attr_accessor :index
-    attr_accessor :values
+    attr_accessor :value
     
     def initialize()
       super()
@@ -37,7 +39,7 @@ module Nurby
       super()
       
       @index = 0
-      @values = []
+      @value = nil
     end
     
     def parse!(exp_parser,parsed_begin_tag=false,parsed_end_tag=false)
@@ -48,27 +50,16 @@ module Nurby
       
       while exp_parser.next_chr?()
         next if exp_parser.escaped?()
-        
-        case exp_parser[0]
-        when ','
-          @values.push(exp_parser.saver('v').str.chop())
-          exp_parser.reset_saver('v')
-        end
       end
       
       exp_parser.add_saver_chops() # Tags will always be chopped off in super()
-      
-      @values.push(exp_parser.saver('v').str.chop()) if exp_parser.saver?('v')
-      
-      # Don't validate any of the values; let it fly; even allow empty string '' or no values
-      
-      @value = @values.first()
+      @value = exp_parser.saver('v').str.chop() if exp_parser.saver?('v')
     end
     
     def to_s()
       s = super()
       s << format('index',@index)
-      s << format('vals',@values.join(', '))
+      s << format('val',@value)
       return s
     end
   end

@@ -2,7 +2,7 @@
 
 ###
 # This file is part of nurby.
-# Copyright (c) 2017 Jonathan Bradley Whited (@esotericpig)
+# Copyright (c) 2017-2018 Jonathan Bradley Whited (@esotericpig)
 # 
 # nurby is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -33,8 +33,8 @@ require 'nurby/vars/var'
 module Nurby
   # (x.ord +/- 1).chr for entire string (only a-z, A-Z; else carry/borrow)
   class RangeVar < Var
-    CLOSING_TAG = ']' # @see Util.escape(...)
-    OPENING_TAG = '[' # @see Util.escape(...)
+    BEGIN_TAG = '[' # @see Util.escape(...)
+    END_TAG = ']' # @see Util.escape(...)
     
     attr_accessor :begin_value
     attr_accessor :end_value
@@ -42,9 +42,11 @@ module Nurby
     attr_accessor :prefix
     attr_accessor :step
     
-    def initialize
+    def initialize()
       super()
       clear()
+      
+      @str_id_len = 9
     end
     
     def clear()
@@ -57,9 +59,8 @@ module Nurby
       @step = 0
     end
     
-    def parse!(exp_parser,parsed_opening_tag=false,parsed_closing_tag=false)
-      exp_parser = super(exp_parser,parsed_opening_tag ? nil : OPENING_TAG,
-        parsed_closing_tag ? nil : CLOSING_TAG)
+    def parse!(exp_parser,parsed_begin_tag=false,parsed_end_tag=false)
+      exp_parser = super(exp_parser,parsed_begin_tag ? nil : BEGIN_TAG,parsed_end_tag ? nil : END_TAG)
       
       exp_parser.clear_savers('b','e',':')
       exp_parser.start_saver('b')
@@ -204,13 +205,11 @@ module Nurby
     
     def to_s()
       s = super()
-      
-      s << "- beg_val:  #{@begin_value}\n"
-      s << "- end_val:  #{@end_value}\n"
-      s << "- min_size: #{@min_size}\n"
-      s << "- prefix:   #{@prefix}\n"
-      s << "- step:     #{@step}\n"
-      
+      s << format('beg_val',@begin_value)
+      s << format('end_val',@end_value)
+      s << format('min_size',@min_size)
+      s << format('prefix',@prefix)
+      s << format('step',@step)
       return s
     end
   end

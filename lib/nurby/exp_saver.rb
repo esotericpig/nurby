@@ -2,7 +2,7 @@
 
 ###
 # This file is part of nurby.
-# Copyright (c) 2017 Jonathan Bradley Whited (@esotericpig)
+# Copyright (c) 2017-2018 Jonathan Bradley Whited (@esotericpig)
 # 
 # nurby is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -76,6 +76,8 @@ module Nurby
     def stop?()
       return @stop
     end
+    
+    # TODO: add unsave()
     
     def to_s()
       s = ''

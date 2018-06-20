@@ -40,7 +40,7 @@ e  = eval(nurby_exp_str)
 
 ## License
 > nurby (https://github.com/esotericpig/nurby)  
-> Copyright (c) 2017 Jonathan Bradley Whited (@esotericpig)  
+> Copyright (c) 2017-2018 Jonathan Bradley Whited (@esotericpig)  
 > 
 > nurby is free software: you can redistribute it and/or modify  
 > it under the terms of the GNU Lesser General Public License as published by  

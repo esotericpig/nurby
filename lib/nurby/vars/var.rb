@@ -2,7 +2,7 @@
 
 ###
 # This file is part of nurby.
-# Copyright (c) 2017 Jonathan Bradley Whited (@esotericpig)
+# Copyright (c) 2017-2018 Jonathan Bradley Whited (@esotericpig)
 # 
 # nurby is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -19,12 +19,13 @@
 ###
 
 require 'nurby/exp_parser'
+require 'nurby/scrap'
 require 'nurby/util'
 
 require 'nurby/errors/parse_errors'
 
 module Nurby
-  class Var
+  class Var < Scrap
     attr_accessor :id
     attr_accessor :per_var_id
     attr_accessor :time
@@ -32,7 +33,10 @@ module Nurby
     attr_accessor :value
     
     def initialize()
+      super()
       clear()
+      
+      @str_id_len = 8
     end
     
     def clear()
@@ -43,12 +47,12 @@ module Nurby
       @value = nil
     end
     
-    def parse!(exp_parser,opening_tag=nil,closing_tag=nil)
-      has_closing_tag = closing_tag.nil?()
-      has_opening_tag = opening_tag.nil?()
+    def parse!(exp_parser,begin_tag=nil,end_tag=nil)
+      has_begin_tag = begin_tag.nil?()
+      has_end_tag = end_tag.nil?()
       
-      has_opening_tag = exp_parser.find!(opening_tag) if !has_opening_tag
-      raise NoOpeningTag,%Q^Missing opening tag ("#{opening_tag}") in var^ if !has_opening_tag
+      has_begin_tag = exp_parser.find!(begin_tag) if !has_begin_tag
+      raise NoOpeningTag,%Q^Missing opening tag ("#{begin_tag}") in var^ if !has_begin_tag
       
       exp_parser.clear_savers('id','v','=','/','*')
       exp_parser.start_saver('id')
@@ -57,8 +61,8 @@ module Nurby
       while exp_parser.next_chr?()
         next if exp_parser.escaped?()
         
-        if exp_parser.look_ahead?(closing_tag,accept_nil: false)
-          has_closing_tag = true
+        if exp_parser.look_ahead?(end_tag,accept_nil: false)
+          has_end_tag = true
           break
         end
         
@@ -87,9 +91,9 @@ module Nurby
         end
       end
       
-      exp_parser.add_saver_chops() if closing_tag.nil?()
+      exp_parser.add_saver_chops() if end_tag.nil?()
       
-      raise NoClosingTag,%Q^Missing closing tag ("#{closing_tag}") in var^ if !has_closing_tag
+      raise NoClosingTag,%Q^Missing closing tag ("#{end_tag}") in var^ if !has_end_tag
       
       if exp_parser.saver?('/')
         @per_var_id = exp_parser.saver('/').str.chop()
@@ -120,14 +124,12 @@ module Nurby
     end
     
     def to_s()
-      s = ''
-      
-      s << "- id:       #{@id}\n"
-      s << "- per_var:  #{@per_var_id}\n"
-      s << "- time:     #{@time}\n"
-      s << "- times:    #{@times}\n"
-      s << "- val:      #{@value}\n"
-      
+      s = super()
+      s << format('id',@id)
+      s << format('per_var',@per_var_id)
+      s << format('time',@time)
+      s << format('times',@times)
+      s << format('val',@value)
       return s
     end
   end

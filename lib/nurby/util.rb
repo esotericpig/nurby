@@ -2,7 +2,7 @@
 
 ###
 # This file is part of nurby.
-# Copyright (c) 2017 Jonathan Bradley Whited (@esotericpig)
+# Copyright (c) 2017-2018 Jonathan Bradley Whited (@esotericpig)
 # 
 # nurby is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -46,8 +46,8 @@ module Nurby
       
       var_classes.each do |var_class|
         # concat(...) for array of chrs
-        chrs_to_escape.concat(var_class::CLOSING_TAG.chars) if var_class.const_defined?(:CLOSING_TAG)
-        chrs_to_escape.concat(var_class::OPENING_TAG.chars) if var_class.const_defined?(:OPENING_TAG)
+        chrs_to_escape.concat(var_class::BEGIN_TAG.chars) if var_class.const_defined?(:BEGIN_TAG)
+        chrs_to_escape.concat(var_class::END_TAG.chars) if var_class.const_defined?(:END_TAG)
       end
       
       # escape(...) will create a Set of chrs

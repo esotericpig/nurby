@@ -2,7 +2,7 @@
 
 ###
 # This file is part of nurby.
-# Copyright (c) 2017 Jonathan Bradley Whited (@esotericpig)
+# Copyright (c) 2017-2018 Jonathan Bradley Whited (@esotericpig)
 # 
 # nurby is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -77,18 +77,29 @@ end
 begin
   exp = (ARGV.length > 0) ? ARGV[0] : '[l=1-4/u*2]'
   ep = Nurby::ExpParser.new(exp)
+  url = []
   vf = Nurby::VarFactory.new()
   v = nil
   
   puts "exp: #{exp}"
   puts "ep:\n#{ep}"
   
+  ep.start_saver('url')
+  
   while ep.next_chr?()
     v = vf.parse!(ep)
-    puts "var[#{v.id}]:\n#{v}" if !v.nil?()
+    
+    if !v.nil?()
+      puts "var[#{v.id}]:\n#{v}"
+      url << ep.saver('url').str.chomp(v.class::BEGIN_TAG)
+      url << "<#{v.id}>"
+      ep.reset_saver('url')
+    end
   end
   
   vf.check_vars()
+  url << ep.saver('url').str unless ep.saver('url').str.strip().empty?()
+  puts "URL parts: #{url}"
 rescue Nurby::NurbyError => ne
   puts "#{(ne.exit_code.nil?) ? nil : ne.exit_code.code}: #{ne.message}"
   puts

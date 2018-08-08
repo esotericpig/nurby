@@ -69,11 +69,11 @@ module Nurby
       exp_parser.add_saver_chops()
       
       @id = exp_parser.saver('id').str.chop()
-      raise NoMethodID,'Missing method ID' if @id.empty?()
+      raise ParseErrors::NoMethodID,'Missing method ID' if @id.empty?()
       
       @code = nil
       @code = exp_parser.saver(':').str.chop() if exp_saver.saver?(':')
-      raise NoValue,'Missing method code' if @code.nil?() || @code.strip().empty?()
+      raise ParseErrors::NoValue,'Missing method code' if @code.nil?() || @code.strip().empty?()
       
       return exp_parser
     end

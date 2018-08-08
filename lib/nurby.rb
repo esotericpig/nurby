@@ -24,26 +24,30 @@
 #       ['bb.com/',Var('[05-]'),' bb ',Var('[u=1-4]'),...]
 #       this is the job of the Parser class
 
-# vars/:    (x)Var       (x)RangeVar   (x)SetVar        (x)VarFactory
+# vars/:    (x)Var       (x)RangeVar   (x)SetVar        ( ) VarVar (x)VarFactory
 # methods/: ( )Method    ( )RubyMethod ( )MethodFactory
-# :         (x)ExpParser (x)ExpStr     (x)parser_errors
+# :         (x)ExpParser (x)ExpStr
 #           ( )Parser    ( )Runner
+# tests:    ( )
 
 require 'bundler/setup'
 
 require 'nurby/exp_parser'
 require 'nurby/exp_saver'
+require 'nurby/scrap'
 require 'nurby/util'
 require 'nurby/version'
 
 require 'nurby/errors/errors'
 require 'nurby/errors/exit_codes'
 require 'nurby/errors/parse_errors'
+require 'nurby/errors/var_errors'
 
 require 'nurby/vars/range_var'
 require 'nurby/vars/set_var'
 require 'nurby/vars/var'
 require 'nurby/vars/var_factory'
+require 'nurby/vars/var_var'
 
 module Nurby
   class Method
@@ -75,7 +79,7 @@ module Nurby
 end
 
 begin
-  exp = (ARGV.length > 0) ? ARGV[0] : '[l=1-4/u*2]'
+  exp = (ARGV.length > 0) ? ARGV[0] : 'google.com/[u=1-4*2]{l=2,5,11/u}/end'
   ep = Nurby::ExpParser.new(exp)
   url = []
   vf = Nurby::VarFactory.new()
@@ -91,7 +95,8 @@ begin
     
     if !v.nil?()
       puts "var[#{v.id}]:\n#{v}"
-      url << v.chomp_tag(ep.saver('url').str)
+      s = v.chomp_tag(ep.saver('url').str.strip())
+      url << s unless s.empty?()
       url << "<#{v.id}>"
       ep.reset_saver('url')
     end

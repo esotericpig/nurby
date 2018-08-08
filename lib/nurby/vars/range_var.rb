@@ -78,13 +78,13 @@ module Nurby
           # Check if ':' is not running (which allows negative numbers) and 'e' is a negative number
           elsif (!exp_parser.saver?(':') || exp_parser.saver(':').stop?()) &&
                 (exp_parser.saver('e').stop?() || Util.gsub_spaces(exp_parser.saver('e').str) != '-')
-            raise InvalidSymbol,"Too many '-' symbols in range var"
+            raise ParseErrors::InvalidSymbol,"Too many '-' symbols in range var"
           end
         when ':'
           if !exp_parser.saver?(':')
             exp_parser.start_saver(':',stop_savers: true)
           else
-            raise InvalidSymbol,"Too many ':' symbols in range var"
+            raise ParseErrors::InvalidSymbol,"Too many ':' symbols in range var"
           end
         end
       end
@@ -102,7 +102,7 @@ module Nurby
         value_step = 1
       end
       
-      raise NoValue,'Missing start value in range var' if @begin_value.empty?
+      raise ParseErrors::NoValue,'Missing start value in range var' if @begin_value.empty?
       
       is_begin_int = Util.int?(@begin_value)
       is_begin_word = Util.word?(@begin_value)
@@ -110,8 +110,8 @@ module Nurby
       if is_begin_int
         @begin_value = @begin_value.to_i()
       elsif !is_begin_word
-        raise InvalidValue,%Q^Start value ("#{@begin_value}") in range var is not an integer ("+/-0-9") ^ <<
-          %Q^or a word ("a-zA-Z")^
+        raise ParseErrors::InvalidValue,
+          %Q^Start value ("#{@begin_value}") in range var is not an integer ("+/-0-9") or a word ("a-zA-Z")^
       end
       
       if exp_parser.saver?('e')
@@ -136,14 +136,14 @@ module Nurby
           is_end_word = Util.word?(@end_value)
           
           if !is_end_int && !is_end_word
-            raise InvalidValue,%Q^End value ("#{@end_value}") in range var is not an integer ("+/-0-9") ^ <<
-              %Q^or a word ("a-zA-Z")^
+            raise ParseErrors::InvalidValue,
+              %Q^End value ("#{@end_value}") in range var is not an integer ("+/-0-9") or a word ("a-zA-Z")^
           end
           
           # Equivalent to: (is_begin_int && is_end_word) || (is_begin_word && is_end_int)
           if is_begin_int ^ is_end_int
-            raise MismatchValue,%Q^Start value ("#{@begin_value}") and end value ("#{@end_value}") types ^ <<
-              %Q^in range var mismatch (both must be integers or words)^
+            raise ParseErrors::MismatchValue,
+              %Q^Start value ("#{@begin_value}") and end value ("#{@end_value}") types in range var mismatch (both must be integers or words)^
           end
           
           values_equal = false
@@ -155,8 +155,8 @@ module Nurby
             values_equal = (@begin_value == @end_value)
           else
             if !Util.reverse_chrs_case_equal?(@begin_value,@end_value)
-              raise MismatchValue,%Q^Start value ("#{@begin_value}") and end value ("#{@end_value}") ^ <<
-                %Q^reverse chars' case in range var mismatch ("[aBc-De]" is okay, but not "[aBc-DeF]")^
+              raise ParseErrors::MismatchValue,
+                %Q^Start value ("#{@begin_value}") and end value ("#{@end_value}") reverse chars' case in range var mismatch ("[aBc-De]" is okay, but not "[aBc-DeF]")^
             end
             
             cmp = @begin_value.casecmp(@end_value)
@@ -171,8 +171,8 @@ module Nurby
           end
           
           if values_equal
-            raise InvalidValue,%Q^Start value "#{@begin_value}" and end value "#{@end_value}" in range ^ <<
-              %Q^var could create an infinite loop (equal values)^
+            raise ParseErrors::InvalidValue,
+              %Q^Start value "#{@begin_value}" and end value "#{@end_value}" in range var could create an infinite loop (equal values)^
           end
         end
       end
@@ -182,10 +182,10 @@ module Nurby
       
       if exp_parser.saver?(':')
         @step = Util.gsub_spaces(exp_parser.saver(':').str.chop())
-        raise NoValue,"Missing step (':') value in range var" if @step.empty?
+        raise ParseErrors::NoValue,"Missing step (':') value in range var" if @step.empty?
         
         if !Util.int?(@step)
-          raise InvalidValue,%Q^Step (':') value ("#{@step}") in range var is not an integer^
+          raise ParseErrors::InvalidValue,%Q^Step (':') value ("#{@step}") in range var is not an integer^
         end
         
         @step = @step.to_i
@@ -197,7 +197,8 @@ module Nurby
       # If @step is not the same sign [(@step ^ value_step) < 0], then this will be an infinite loop.
       # For example, "[1-4:-1]" would cause an infinite loop as 1 would keep decrementing forever.
       if @step == 0 || (!@end_value.nil?() && (@step ^ value_step) < 0)
-        raise InvalidValue,%Q(Step (':') value ("#{@step}") in range var could create an infinite loop)
+        raise ParseErrors::InvalidValue,
+          %Q(Step (':') value ("#{@step}") in range var could create an infinite loop)
       end
       
       @value = @begin_value

@@ -2,7 +2,7 @@
 
 ###
 # This file is part of nurby.
-# Copyright (c) 2017-2018 Jonathan Bradley Whited (@esotericpig)
+# Copyright (c) 2018 Jonathan Bradley Whited (@esotericpig)
 # 
 # nurby is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -22,25 +22,18 @@ require 'nurby/errors/errors'
 require 'nurby/errors/exit_codes'
 
 ###
-# Only for errors related to parsing.
+# Only for errors related to vars, var factories, etc.
 ###
 module Nurby
-  class ParseError < NurbyError
-    def initialize(message=nil,exit_code=ExitCodes::MALFORMED_URL)
+  class VarError < NurbyError
+    def initialize(message=nil,exit_code=ExitCodes::INTERNAL_ERROR)
       super(message,exit_code)
     end
   end
   
-  module ParseErrors
-    class InvalidMethodID < ParseError; end
-    class InvalidSymbol < ParseError; end
-    class InvalidValue < ParseError; end
-    class InvalidVarID < ParseError; end
-    class MismatchValue < ParseError; end
-    class NoClosingTag < ParseError; end
-    class NoMethodID < ParseError; end
-    class NoOpeningTag < ParseError; end
-    class NoValue < ParseError; end
-    class NoVarID < ParseError; end
+  module VarErrors
+    class InvalidVarClass < VarError; end
+    class VarClassExists < VarError; end
+    class VarClassTagMismatch < VarError; end
   end
 end

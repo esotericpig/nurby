@@ -52,7 +52,7 @@ module Nurby
       has_end_tag = end_tag.nil?()
       
       has_begin_tag = exp_parser.find!(begin_tag) if !has_begin_tag
-      raise NoOpeningTag,%Q^Missing opening tag ("#{begin_tag}") in var^ if !has_begin_tag
+      raise ParseErrors::NoOpeningTag,%Q^Missing opening tag ("#{begin_tag}") in var^ if !has_begin_tag
       
       exp_parser.clear_savers('id','v','=','/','*')
       exp_parser.start_saver('id')
@@ -74,42 +74,44 @@ module Nurby
             
             exp_parser.start_saver('=',stop_savers: true,escape: false)
           else
-            raise InvalidSymbol,"Too many '=' symbols in var"
+            raise ParseErrors::InvalidSymbol,"Too many '=' symbols in var"
           end
         when '/'
           if !exp_parser.saver?('/')
             exp_parser.start_saver('/',stop_savers: true)
           else
-            raise InvalidSymbol,"Too many '/' symbols in var"
+            raise ParseErrors::InvalidSymbol,"Too many '/' symbols in var"
           end
         when '*'
           if !exp_parser.saver?('*')
             exp_parser.start_saver('*',stop_savers: true)
           else
-            raise InvalidSymbol,"Too many '*' symbols in var"
+            raise ParseErrors::InvalidSymbol,"Too many '*' symbols in var"
           end
         end
       end
       
       exp_parser.add_saver_chops() if end_tag.nil?()
       
-      raise NoClosingTag,%Q^Missing closing tag ("#{end_tag}") in var^ if !has_end_tag
+      raise ParseErrors::NoClosingTag,%Q^Missing closing tag ("#{end_tag}") in var^ if !has_end_tag
       
       if exp_parser.saver?('/')
         @per_var_id = exp_parser.saver('/').str.chop()
-        raise NoVarID,"Missing per var ('/') ID in var" if @per_var_id.empty?
+        raise ParseErrors::NoVarID,"Missing per var ('/') ID in var" if @per_var_id.empty?
       end
       
       if exp_parser.saver?('*')
         @times = Util.gsub_spaces(exp_parser.saver('*').str.chop())
-        raise NoValue,"Missing number of times ('*') value in var" if @times.empty?
+        raise ParseErrors::NoValue,"Missing number of times ('*') value in var" if @times.empty?
         
         if !Util.int?(@times)
-          raise InvalidValue,%Q^Number of times ('*') value ("#{@times}") is not an integer ("+/-0-9")^
+          raise ParseErrors::InvalidValue,
+            %Q^Number of times ('*') value ("#{@times}") is not an integer ("+/-0-9")^
         end
         
         @times = @times.to_i
-        raise InvalidValue,%Q^Number of times ('*') value ("#{@times}") is less than one in var^ if @times < 1
+        raise ParseErrors::InvalidValue,
+          %Q^Number of times ('*') value ("#{@times}") is less than one in var^ if @times < 1
       end
       
       if exp_parser.saver?('=')
@@ -118,7 +120,7 @@ module Nurby
         @value = exp_parser.saver('v').str.chop()
       end
       
-      raise NoValue,"Missing value in var" if @value.empty?
+      raise ParseErrors::NoValue,"Missing value in var" if @value.empty?
       
       return ExpParser.new(@value)
     end

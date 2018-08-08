@@ -19,6 +19,7 @@
 ###
 
 require 'nurby/errors/parse_errors'
+require 'nurby/errors/var_errors'
 
 require 'nurby/vars/range_var'
 require 'nurby/vars/set_var'
@@ -48,16 +49,24 @@ module Nurby
     end
     
     # Basically a tree/graph
-    def add_var_class(var_class)
-      raise "No BEGIN_TAG for var_class[#{var_class}]" if !var_class.const_defined?(:BEGIN_TAG)
-      raise "BEGIN_TAG is empty for var_class[#{var_class}]" if var_class::BEGIN_TAG.nil?() ||
-        var_class::BEGIN_TAG.strip().empty?()
+    def add_var_class(var_class,allow_override=false)
+      raise VarErrors::InvalidVarClass,
+        "No BEGIN_TAG for var_class[#{var_class}]" if !var_class.const_defined?(:BEGIN_TAG)
+      if var_class::BEGIN_TAG.nil?() || var_class::BEGIN_TAG.strip().empty?()
+        raise VarErrors::InvalidVarClass,
+          "BEGIN_TAG is empty for var_class[#{var_class}]"
+      end
       
       curr_hash = @var_classes
       
       var_class::BEGIN_TAG.each_char() do |c|
         curr_hash[c] = {} unless curr_hash.key?(c)
         curr_hash = curr_hash[c]
+      end
+      
+      if !allow_override and curr_hash.key?(:value)
+        raise VarErrors::VarClassExists,
+          "var_class[#{var_class}] already exists; to allow overriding, set param[allow_override] to true for method[add_var_class()]"
       end
       
       curr_hash[:value] = var_class
@@ -70,10 +79,10 @@ module Nurby
       @vars.each() do |id,var|
         if !var.per_var_id.nil?()
           if !@vars.include?(var.per_var_id)
-            raise InvalidVarID,"per_var[#{var.per_var_id}] from var[#{id}] does not exist"
+            raise ParseErrors::InvalidVarID,"per_var[#{var.per_var_id}] from var[#{id}] does not exist"
           end
           if id == var.per_var_id
-            raise InvalidVarID,"per_var[#{var.per_var_id}] from var[#{id}] cannot be the same ID"
+            raise ParseErrors::InvalidVarID,"per_var[#{var.per_var_id}] from var[#{id}] cannot be the same ID"
           end
         end
         
@@ -85,8 +94,8 @@ module Nurby
       
       # FIXME: Should be okay also if have per_var if the per_var is on a set_var or range_var with end
       if has_range && !range_has_end
-        raise NoValue,"At least one range_var must have an end value without a per_var to avoid an " <<
-          "infinite loop"
+        raise ParseErrors::NoValue,
+          "At least one range_var must have an end value without a per_var to avoid an infinite loop"
       end
     end
     
@@ -134,8 +143,10 @@ module Nurby
           if !var_class.nil?()
             var_class::BEGIN_TAG[1..-1].each_char() do |c|
               break unless exp_parser.next_chr?()
-              raise "var_class[#{var_class}] and BEGIN_TAG[#{var_class::BEGIN_TAG}] mismatch" if
-                exp_parser[0] != c
+              if exp_parser[0] != c
+                raise VarErrors::VarClassTagMismatch,
+                  "var_class[#{var_class}] and BEGIN_TAG[#{var_class::BEGIN_TAG}] mismatch"
+              end
             end
           end
         else
@@ -163,7 +174,8 @@ module Nurby
           @next_id += 1
         end
         
-        raise InvalidVarID,"var.id[#{var.id}] already exists; duplicate IDs" if @vars.key?(var.id)
+        raise ParseErrors::InvalidVarID,
+          "var.id[#{var.id}] already exists; duplicate IDs" if @vars.key?(var.id)
         @vars[var.id] = var
       end
       

@@ -30,6 +30,10 @@ module Nurby
       @str_id_len = 5
     end
     
+    def chomp_tag(str)
+      return str.chomp(self.class::BEGIN_TAG)
+    end
+    
     def format(id,var,newline=true)
       return (newline ? "\n" : '') << "- %*s #{var}" % [-@str_id_len,id + ':']
     end

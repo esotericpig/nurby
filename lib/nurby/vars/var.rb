@@ -39,10 +39,6 @@ module Nurby
       @str_id_len = 8
     end
     
-    def chomp_tag(str)
-      return str.chomp(self.class::BEGIN_TAG)
-    end
-    
     def clear()
       @id = nil
       @per_var_id = nil

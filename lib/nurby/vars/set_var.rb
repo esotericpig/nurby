@@ -43,22 +43,22 @@ module Nurby
     def parse!(exp_parser,parsed_begin_tag=false,parsed_end_tag=false)
       exp_parser = super(exp_parser,parsed_begin_tag ? nil : BEGIN_TAG,parsed_end_tag ? nil : END_TAG)
       
-      exp_parser.clear_savers('v')
-      exp_parser.start_saver('v')
+      exp_parser.clear_savers('SetVar.val')
+      exp_parser.start_saver('SetVar.val')
       
       while exp_parser.next_chr?()
         next if exp_parser.escaped?()
         
         case exp_parser[0]
         when ','
-          @values.push(exp_parser.saver('v').str.chop())
-          exp_parser.reset_saver('v')
+          @values.push(exp_parser.saver('SetVar.val').str.chop())
+          exp_parser.reset_saver('SetVar.val')
         end
       end
       
       exp_parser.add_saver_chops() # Tags will always be chopped off in super()
       
-      @values.push(exp_parser.saver('v').str.chop()) if exp_parser.saver?('v')
+      @values.push(exp_parser.saver('SetVar.val').str.chop()) if exp_parser.saver?('SetVar.val')
       
       # Don't validate any of the values; let it fly; even allow empty string '' or no values
       

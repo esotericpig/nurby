@@ -62,27 +62,28 @@ module Nurby
     def parse!(exp_parser,parsed_begin_tag=false,parsed_end_tag=false)
       exp_parser = super(exp_parser,parsed_begin_tag ? nil : BEGIN_TAG,parsed_end_tag ? nil : END_TAG)
       
-      exp_parser.clear_savers('b','e',':')
-      exp_parser.start_saver('b')
+      exp_parser.clear_savers('RangeVar.begin','RangeVar.end','RangeVar.:')
+      exp_parser.start_saver('RangeVar.begin')
       
       while exp_parser.next_chr?()
         next if exp_parser.escaped?()
         
         case exp_parser[0]
         when '-'
-          if !exp_parser.saver?('e')
-            # Check if 'b' is a negative number
-            if Util.gsub_spaces(exp_parser.saver('b').str) != '-'
-              exp_parser.start_saver('e',stop_savers: true)
+          if !exp_parser.saver?('RangeVar.end')
+            # Check if begin value is a negative number
+            if Util.gsub_spaces(exp_parser.saver('RangeVar.begin').str) != '-'
+              exp_parser.start_saver('RangeVar.end',stop_savers: true)
             end
-          # Check if ':' is not running (which allows negative numbers) and 'e' is a negative number
-          elsif (!exp_parser.saver?(':') || exp_parser.saver(':').stop?()) &&
-                (exp_parser.saver('e').stop?() || Util.gsub_spaces(exp_parser.saver('e').str) != '-')
+          # Check if step is not running (which allows negative numbers) and end value is a negative number
+          elsif (!exp_parser.saver?('RangeVar.:') || exp_parser.saver('RangeVar.:').stop?()) &&
+                (exp_parser.saver('RangeVar.end').stop?() ||
+                 Util.gsub_spaces(exp_parser.saver('RangeVar.end').str) != '-')
             raise ParseErrors::InvalidSymbol,"Too many '-' symbols in range var"
           end
         when ':'
-          if !exp_parser.saver?(':')
-            exp_parser.start_saver(':',stop_savers: true)
+          if !exp_parser.saver?('RangeVar.:')
+            exp_parser.start_saver('RangeVar.:',stop_savers: true)
           else
             raise ParseErrors::InvalidSymbol,"Too many ':' symbols in range var"
           end
@@ -91,7 +92,7 @@ module Nurby
       
       exp_parser.add_saver_chops() # Tags will always be chopped off in super()
       
-      @begin_value = exp_parser.saver('b').str.chop()
+      @begin_value = exp_parser.saver('RangeVar.begin').str.chop()
       
       if @begin_value.length > 0
         @min_size = Util.index_int_or_letter(@begin_value)
@@ -114,8 +115,8 @@ module Nurby
           %Q^Start value ("#{@begin_value}") in range var is not an integer ("+/-0-9") or a word ("a-zA-Z")^
       end
       
-      if exp_parser.saver?('e')
-        @end_value = exp_parser.saver('e').str.chop()
+      if exp_parser.saver?('RangeVar.end')
+        @end_value = exp_parser.saver('RangeVar.end').str.chop()
         
         if @end_value.length > 0
           end_min_size = Util.index_int_or_letter(@end_value)
@@ -180,8 +181,8 @@ module Nurby
       # Assume decrement for a negative number without @end_value
       value_step = -1 if @end_value.nil?() && @begin_value < 0
       
-      if exp_parser.saver?(':')
-        @step = Util.gsub_spaces(exp_parser.saver(':').str.chop())
+      if exp_parser.saver?('RangeVar.:')
+        @step = Util.gsub_spaces(exp_parser.saver('RangeVar.:').str.chop())
         raise ParseErrors::NoValue,"Missing step (':') value in range var" if @step.empty?
         
         if !Util.int?(@step)

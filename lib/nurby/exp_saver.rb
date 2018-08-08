@@ -77,7 +77,17 @@ module Nurby
       return @stop
     end
     
-    # TODO: add unsave()
+    def unsave(str=nil)
+      if !@stop
+        if str.nil?()
+          @str.chop!()
+        else
+          @str.chomp!(str)
+        end
+      end
+      
+      return self
+    end
     
     def to_s()
       s = ''

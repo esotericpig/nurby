@@ -39,6 +39,7 @@ module Nurby
     attr_reader :exp_saver
     attr_reader :exp_savers
     attr_reader :index
+    attr_reader :last_op # :no_op, :prev_op, :next_op
     attr_accessor :options
     attr_reader :running_exp_savers
     
@@ -50,6 +51,7 @@ module Nurby
       @exp_saver = ExpSaver.new(nil)
       @exp_savers = {}
       @index = 0
+      @last_op = :no_op
       @options = options
       @running_exp_savers = {}
     end
@@ -64,6 +66,7 @@ module Nurby
       @exp_saver = @exp_saver.clone()
       @exp_savers = @exp_savers.transform_values(&:clone)
       @index = @index.clone()
+      @last_op = @last_op.clone()
       @options = @options.clone()
       
       # Contains references to @exp_savers
@@ -217,9 +220,12 @@ module Nurby
     end
     
     def next_chr?()
-      if @index >= @exp.length
-        return false
+      if @last_op == :prev_op
+        @index += 1
+        @last_op = :next_op
       end
+      
+      return false if @index >= @exp.length
       
       @escaped = (@exp[@index] == @escape_chr) ? !@escaped : false
       @escaped_chrs.push(@escaped)
@@ -242,11 +248,41 @@ module Nurby
       end
       
       @index += 1
+      @last_op = :next_op
       
       return true
     end
     
-    # TODO: add prev_chr?() and ExpSaver.unsave()
+    def prev_chr?()
+      if @last_op == :next_op
+        @index -= 1
+        @last_op = :prev_op
+      end
+      
+      return false if @index < 0 || @index >= @exp.length
+      
+      if @escaped
+        @exp_saver.unsave() if !@exp_saver.escape?()
+        
+        @running_exp_savers.each_value do |exp_saver|
+          exp_saver.unsave() if !exp_saver.escape?()
+        end
+      else
+        @exp_saver.unsave()
+        
+        @running_exp_savers.each_value do |exp_saver|
+          exp_saver.unsave()
+        end
+      end
+      
+      @index -= 1
+      @last_op = :prev_op
+      
+      @escaped = (@exp[@index] == @escape_chr) ? !@escaped : false
+      @escaped_chrs.pop() unless @escaped_chrs.empty?()
+      
+      return true
+    end
     
     def reset_all_savers()
       @exp_saver.reset()

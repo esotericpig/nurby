@@ -106,7 +106,7 @@ module Nurby
     end
     
     def parse!(exp_parser)
-      return if exp_parser.escaped?()
+      return nil if exp_parser.escaped?()
       
       var = nil
       var_class = @var_classes[exp_parser[0]]

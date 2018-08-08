@@ -91,7 +91,7 @@ begin
     
     if !v.nil?()
       puts "var[#{v.id}]:\n#{v}"
-      url << ep.saver('url').str.chomp(v.class::BEGIN_TAG)
+      url << v.chomp_tag(ep.saver('url').str)
       url << "<#{v.id}>"
       ep.reset_saver('url')
     end

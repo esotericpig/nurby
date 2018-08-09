@@ -85,6 +85,8 @@ begin
   vf = Nurby::VarFactory.new()
   v = nil
   
+  vf.add_input_var_classes()
+  
   puts "exp: #{exp}"
   puts "ep:\n#{ep}"
   

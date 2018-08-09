@@ -43,9 +43,15 @@ module Nurby
       @vars = {}
       
       clear()
+    end
+    
+    def add_input_var_classes()
       add_var_class(RangeVar)
       add_var_class(SetVar)
       add_var_class(VarVar)
+    end
+    
+    def add_output_var_classes()
     end
     
     # Basically a tree/graph
@@ -53,8 +59,7 @@ module Nurby
       raise VarErrors::InvalidVarClass,
         "No BEGIN_TAG for var_class[#{var_class}]" if !var_class.const_defined?(:BEGIN_TAG)
       if var_class::BEGIN_TAG.nil?() || var_class::BEGIN_TAG.strip().empty?()
-        raise VarErrors::InvalidVarClass,
-          "BEGIN_TAG is empty for var_class[#{var_class}]"
+        raise VarErrors::InvalidVarClass,"BEGIN_TAG is empty for var_class[#{var_class}]"
       end
       
       curr_hash = @var_classes
@@ -62,11 +67,14 @@ module Nurby
       var_class::BEGIN_TAG.each_char() do |c|
         curr_hash[c] = {} unless curr_hash.key?(c)
         curr_hash = curr_hash[c]
-      end
-      
-      if !allow_override and curr_hash.key?(:value)
-        raise VarErrors::VarClassExists,
-          "var_class[#{var_class}] already exists; to allow overriding, set param[allow_override] to true for method[add_var_class()]"
+        
+        if !allow_override and curr_hash.key?(:value)
+          conflict = curr_hash[:value]
+          
+          raise VarErrors::VarClassConflict,%Q^var_class[#{var_class}].begin_tag"#{var_class::BEGIN_TAG}"^ <<
+            %Q^conflicts with another var_class[#{conflict}].begin_tag"#{conflict::BEGIN_TAG}"; to allow ^ <<
+            %Q^overriding, set param[allow_override] to true for method[add_var_class]^
+        end
       end
       
       curr_hash[:value] = var_class

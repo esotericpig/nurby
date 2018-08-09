@@ -33,7 +33,7 @@ module Nurby
   
   module VarErrors
     class InvalidVarClass < VarError; end
-    class VarClassExists < VarError; end
+    class VarClassConflict < VarError; end
     class VarClassTagMismatch < VarError; end
   end
 end

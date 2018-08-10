@@ -18,18 +18,6 @@
 # along with nurby.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-# TODO: break out into classes, just testing for now...
-
-# TODO: while parsing, break out into parts in array
-#       ['bb.com/',Var('[05-]'),' bb ',Var('[u=1-4]'),...]
-#       this is the job of the Parser class
-
-# vars/:    (x)Var       (x)RangeVar   (x)SetVar        (x) VarVar (x)VarFactory
-# methods/: ( )Method    ( )RubyMethod ( )MethodFactory
-# :         (x)ExpParser (x)ExpStr
-#           ( )Parser    ( )Runner
-# tests:    ( )
-
 require 'bundler/setup'
 
 require 'nurby/exp_parser'

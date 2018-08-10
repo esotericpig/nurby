@@ -43,15 +43,13 @@ module Nurby
       @vars = {}
       
       clear()
+      add_in_var_classes()
     end
     
-    def add_input_var_classes()
+    def add_in_var_classes()
       add_var_class(RangeVar)
       add_var_class(SetVar)
       add_var_class(VarVar)
-    end
-    
-    def add_output_var_classes()
     end
     
     # Basically a tree/graph
@@ -72,8 +70,8 @@ module Nurby
           conflict = curr_hash[:value]
           
           raise VarErrors::VarClassConflict,%Q^var_class[#{var_class}].begin_tag"#{var_class::BEGIN_TAG}"^ <<
-            %Q^conflicts with another var_class[#{conflict}].begin_tag"#{conflict::BEGIN_TAG}"; to allow ^ <<
-            %Q^overriding, set param[allow_override] to true for method[add_var_class]^
+            %Q^ conflicts with another var_class[#{conflict}].begin_tag"#{conflict::BEGIN_TAG}"; to allow^ <<
+            %Q^ overriding, set param[allow_override] to true for method[add_var_class(...)]^
         end
       end
       
@@ -82,7 +80,9 @@ module Nurby
     
     def check_vars()
       has_range = false
-      range_has_end = false
+      has_set = false
+      has_safe_range = false
+      has_safe_set = false
       
       @vars.each() do |id,var|
         if !var.per_var_id.nil?()
@@ -96,15 +96,28 @@ module Nurby
         
         if var.is_a?(RangeVar)
           has_range = true
-          range_has_end = true if !var.end_value.nil?() && var.per_var_id.nil?()
+          #range_has_end = true if !var.end_value.nil?() && var.per_var_id.nil?()
+        elsif var.is_a?(SetVar)
+          has_set = true
+        elsif var.is_a?(VarVar)
+          if !@vars.include?(var.var_id)
+            raise ParseErrors::InvalidVarID,"var[#{var.var_id}] from var_var[#{id}] does not exist"
+          end
+          if id == var.var_id
+            raise ParseErrors::InvalidVarID,"var[#{var.var_id}] from var_var[#{id}] cannot be the same ID"
+          end
         end
       end
       
+      # bob.com/[u=1-   ]{l=1,2,3}
+      # bob.com/[u=1-4/l]{l=1,2,3}
+      # bob.com/{u=1,2,3}[l=1-   ]
+      
       # FIXME: Should be okay also if have per_var if the per_var is on a set_var or range_var with end
-      if has_range && !range_has_end
-        raise ParseErrors::NoValue,
-          "At least one range_var must have an end value without a per_var to avoid an infinite loop"
-      end
+      #if has_range && !range_has_end
+      #  raise ParseErrors::NoValue,
+      #    "At least one range_var must have an end value without a per_var to avoid an infinite loop"
+      #end
     end
     
     def clear()

@@ -32,6 +32,7 @@ module Nurby
   end
   
   module ParseErrors
+    class InfiniteLoop < ParseError; end
     class InvalidMethodID < ParseError; end
     class InvalidSymbol < ParseError; end
     class InvalidValue < ParseError; end

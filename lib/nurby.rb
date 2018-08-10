@@ -24,7 +24,7 @@
 #       ['bb.com/',Var('[05-]'),' bb ',Var('[u=1-4]'),...]
 #       this is the job of the Parser class
 
-# vars/:    (x)Var       (x)RangeVar   (x)SetVar        ( ) VarVar (x)VarFactory
+# vars/:    (x)Var       (x)RangeVar   (x)SetVar        (x) VarVar (x)VarFactory
 # methods/: ( )Method    ( )RubyMethod ( )MethodFactory
 # :         (x)ExpParser (x)ExpStr
 #           ( )Parser    ( )Runner
@@ -68,6 +68,12 @@ module Nurby
   end
   
   class Parser
+    attr_accessor :in_parts
+    attr_accessor :out_parts
+    
+    def next_url()
+      # inc all stuff and return nil if done, else string of URL
+    end
   end
   
   class Runner
@@ -79,13 +85,11 @@ module Nurby
 end
 
 begin
-  exp = (ARGV.length > 0) ? ARGV[0] : 'google.com/[u=1-4*2]{l=2,5,11/u}/end'
+  exp = (ARGV.length > 0) ? ARGV[0] : 'google.com/[u=1-4*2]{l=2,5,11/u}/end?lesson=@[l]'
   ep = Nurby::ExpParser.new(exp)
   url = []
   vf = Nurby::VarFactory.new()
   v = nil
-  
-  vf.add_input_var_classes()
   
   puts "exp: #{exp}"
   puts "ep:\n#{ep}"

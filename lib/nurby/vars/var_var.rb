@@ -34,18 +34,15 @@ module Nurby
     
     def initialize()
       super()
-      clear()
-    end
-    
-    def clear()
-      super()
+      
+      @str_id_len = 7
       
       @var_id = nil
       @when_to_init = 1 # Sane default
     end
     
     def parse!(exp_parser,parsed_begin_tag=false,parsed_end_tag=false)
-      exp_parser = super(exp_parser,parsed_begin_tag ? nil : BEGIN_TAG,parsed_end_tag ? nil : END_TAG)
+      exp_parser = super(exp_parser,parsed_begin_tag,parsed_end_tag)
       
       exp_parser.clear_savers('VarVar.id','VarVar.:')
       exp_parser.start_saver('VarVar.id')

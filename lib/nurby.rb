@@ -31,6 +31,7 @@ require 'nurby/errors/exit_codes'
 require 'nurby/errors/parse_errors'
 require 'nurby/errors/var_errors'
 
+require 'nurby/vars/loop_var'
 require 'nurby/vars/range_var'
 require 'nurby/vars/set_var'
 require 'nurby/vars/var'
@@ -91,7 +92,7 @@ begin
       puts "var[#{v.id}]:\n#{v}"
       s = v.chomp_tag(ep.saver('url').str.strip())
       url << s unless s.empty?()
-      url << "<#{v.id}>"
+      url << ('<' << (v.is_a?(Nurby::VarVar) ? "@#{v.var_id}" : v.id) << '>')
       ep.reset_saver('url')
     end
   end

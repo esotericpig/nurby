@@ -21,6 +21,7 @@
 require 'nurby/errors/parse_errors'
 require 'nurby/errors/var_errors'
 
+require 'nurby/vars/loop_var'
 require 'nurby/vars/range_var'
 require 'nurby/vars/set_var'
 require 'nurby/vars/var_var'
@@ -39,10 +40,10 @@ module Nurby
     attr_reader :vars
     
     def initialize()
+      @next_id = 1
       @var_classes = {}
       @vars = {}
       
-      clear()
       add_in_var_classes()
     end
     
@@ -85,12 +86,14 @@ module Nurby
       has_safe_set = false
       
       @vars.each() do |id,var|
-        if !var.per_var_id.nil?()
-          if !@vars.include?(var.per_var_id)
-            raise ParseErrors::InvalidVarID,"per_var[#{var.per_var_id}] from var[#{id}] does not exist"
-          end
-          if id == var.per_var_id
-            raise ParseErrors::InvalidVarID,"per_var[#{var.per_var_id}] from var[#{id}] cannot be the same ID"
+        if var.is_a?(LoopVar)
+          if !var.per_var_id.nil?()
+            if !@vars.include?(var.per_var_id)
+              raise ParseErrors::InvalidVarID,"per_var[#{var.per_var_id}] from var[#{id}] does not exist"
+            end
+            if id == var.per_var_id
+              raise ParseErrors::InvalidVarID,"per_var[#{var.per_var_id}] from var[#{id}] cannot be the same ID"
+            end
           end
         end
         
@@ -118,13 +121,6 @@ module Nurby
       #  raise ParseErrors::NoValue,
       #    "At least one range_var must have an end value without a per_var to avoid an infinite loop"
       #end
-    end
-    
-    def clear()
-      @next_id = 1
-      @vars.clear()
-      
-      return self
     end
     
     def delete(id)

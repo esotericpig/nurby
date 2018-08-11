@@ -18,10 +18,10 @@
 # along with nurby.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-require 'nurby/vars/var'
+require 'nurby/vars/loop_var'
 
 module Nurby
-  class SetVar < Var
+  class SetVar < LoopVar
     BEGIN_TAG = '{' # @see Util.escape(...)
     END_TAG = '}' # @see Util.escape(...)
     
@@ -30,18 +30,13 @@ module Nurby
     
     def initialize()
       super()
-      clear()
-    end
-    
-    def clear()
-      super()
       
       @index = 0
       @values = []
     end
     
     def parse!(exp_parser,parsed_begin_tag=false,parsed_end_tag=false)
-      exp_parser = super(exp_parser,parsed_begin_tag ? nil : BEGIN_TAG,parsed_end_tag ? nil : END_TAG)
+      exp_parser = super(exp_parser,parsed_begin_tag,parsed_end_tag)
       
       exp_parser.clear_savers('SetVar.val')
       exp_parser.start_saver('SetVar.val')

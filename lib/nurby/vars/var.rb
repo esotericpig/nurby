@@ -20,48 +20,39 @@
 
 require 'nurby/exp_parser'
 require 'nurby/scrap'
-require 'nurby/util'
 
 require 'nurby/errors/parse_errors'
 
 module Nurby
   class Var < Scrap
     attr_accessor :id
-    attr_accessor :per_var_id
-    attr_accessor :time
-    attr_accessor :times
     attr_accessor :value
     
     def initialize()
       super()
-      clear()
       
-      @str_id_len = 8
-    end
-    
-    def clear()
       @id = nil
-      @per_var_id = nil
-      @time = 0
-      @times = nil
       @value = nil
     end
     
-    def parse!(exp_parser,begin_tag=nil,end_tag=nil)
+    def parse!(exp_parser,parsed_begin_tag=false,parsed_end_tag=false)
+      begin_tag = parsed_begin_tag ? nil : self.class::BEGIN_TAG
+      end_tag = parsed_end_tag ? nil : self.class::END_TAG
+      
       has_begin_tag = begin_tag.nil?()
       has_end_tag = end_tag.nil?()
       
       has_begin_tag = exp_parser.find!(begin_tag) if !has_begin_tag
       raise ParseErrors::NoOpeningTag,%Q^Missing opening tag ("#{begin_tag}") in var^ if !has_begin_tag
       
-      exp_parser.clear_savers('Var.id','Var.val','Var.=','Var./','Var.*')
+      exp_parser.clear_savers('Var.id','Var.=','Var.val')
       exp_parser.start_saver('Var.id')
       exp_parser.start_saver('Var.val',escape: false) # Value for no '=' specified
       
       while exp_parser.next_chr?()
         next if exp_parser.escaped?()
         
-        if exp_parser.look_ahead?(end_tag,accept_nil: false)
+        if !has_end_tag && exp_parser.look_ahead?(end_tag,accept_nil: false)
           has_end_tag = true
           break
         end
@@ -76,18 +67,6 @@ module Nurby
           else
             raise ParseErrors::InvalidSymbol,"Too many '=' symbols in var"
           end
-        when '/'
-          if !exp_parser.saver?('Var./')
-            exp_parser.start_saver('Var./',stop_savers: true)
-          else
-            raise ParseErrors::InvalidSymbol,"Too many '/' symbols in var"
-          end
-        when '*'
-          if !exp_parser.saver?('Var.*')
-            exp_parser.start_saver('Var.*',stop_savers: true)
-          else
-            raise ParseErrors::InvalidSymbol,"Too many '*' symbols in var"
-          end
         end
       end
       
@@ -95,32 +74,14 @@ module Nurby
       
       raise ParseErrors::NoClosingTag,%Q^Missing closing tag ("#{end_tag}") in var^ if !has_end_tag
       
-      if exp_parser.saver?('Var./')
-        @per_var_id = exp_parser.saver('Var./').str.chop()
-        raise ParseErrors::NoVarID,"Missing per var ('/') ID in var" if @per_var_id.empty?
-      end
-      
-      if exp_parser.saver?('Var.*')
-        @times = Util.gsub_spaces(exp_parser.saver('Var.*').str.chop())
-        raise ParseErrors::NoValue,"Missing number of times ('*') value in var" if @times.empty?
-        
-        if !Util.int?(@times)
-          raise ParseErrors::InvalidValue,
-            %Q^Number of times ('*') value ("#{@times}") is not an integer ("+/-0-9")^
-        end
-        
-        @times = @times.to_i
-        raise ParseErrors::InvalidValue,
-          %Q^Number of times ('*') value ("#{@times}") is less than one in var^ if @times < 1
-      end
-      
       if exp_parser.saver?('Var.=')
-        @value = exp_parser.saver('Var.=').str.chop()
+        @value = exp_parser.saver('Var.=')
       else
-        @value = exp_parser.saver('Var.val').str.chop()
+        @value = exp_parser.saver('Var.val')
       end
+      @value = @value.str.chop()
       
-      raise ParseErrors::NoValue,"Missing value in var" if @value.empty?
+      raise ParseErrors::NoValue,"Missing value in var" if @value.empty?()
       
       return ExpParser.new(@value)
     end
@@ -128,9 +89,6 @@ module Nurby
     def to_s()
       s = super()
       s << format('id',@id)
-      s << format('per_var',@per_var_id)
-      s << format('time',@time)
-      s << format('times',@times)
       s << format('val',@value)
       return s
     end

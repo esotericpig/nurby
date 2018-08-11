@@ -22,17 +22,17 @@ require 'nurby/util'
 
 require 'nurby/errors/parse_errors'
 
-require 'nurby/vars/var'
+require 'nurby/vars/loop_var'
 
 ###
-# An empty @end_value is allowed, so in order to avoid an infinite loop, all of the vars should be checked for
-# an @end_value w/o @per_var_id. See VarFactory.check_vars() for an example.
+# An empty @end_value is allowed, so in order to avoid an infinite loop, all of the vars should be checked.
+# See VarFactory.check_vars() for an example.
 # 
 # @see VarFactory.check_vars()
 ###
 module Nurby
   # (x.ord +/- 1).chr for entire string (only a-z, A-Z; else carry/borrow)
-  class RangeVar < Var
+  class RangeVar < LoopVar
     BEGIN_TAG = '[' # @see Util.escape(...)
     END_TAG = ']' # @see Util.escape(...)
     
@@ -44,13 +44,8 @@ module Nurby
     
     def initialize()
       super()
-      clear()
       
       @str_id_len = 9
-    end
-    
-    def clear()
-      super()
       
       @begin_value = nil
       @end_value = nil
@@ -60,7 +55,7 @@ module Nurby
     end
     
     def parse!(exp_parser,parsed_begin_tag=false,parsed_end_tag=false)
-      exp_parser = super(exp_parser,parsed_begin_tag ? nil : BEGIN_TAG,parsed_end_tag ? nil : END_TAG)
+      exp_parser = super(exp_parser,parsed_begin_tag,parsed_end_tag)
       
       exp_parser.clear_savers('RangeVar.begin','RangeVar.end','RangeVar.:')
       exp_parser.start_saver('RangeVar.begin')
